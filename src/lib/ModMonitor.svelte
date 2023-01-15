@@ -9,8 +9,8 @@
     <ModScope index=3/>
   </div>
   <div class="controls">
-    <h2>Modulation</h2>
-    <button>Pause</button>
+    <!-- <h2>Modulation</h2> -->
+    <!-- <button>Pause</button> -->
   </div>
 </div>
 
@@ -28,7 +28,7 @@
     height: 40px;
     display: flex;
     flex-direction: row;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     /* background-color: blueviolet; */
   }

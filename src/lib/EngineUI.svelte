@@ -109,16 +109,17 @@
     background-color: #000;
     margin: 0 5px;
     padding: 0 20px;
-    border-radius: 4px 4px 0 0;
     transition: all 0.2s ease-out;
   }
 
   button.top {
     border-bottom: #000 1px solid;
+    border-radius: 0 0 4px 4px;
   }
 
   button.bottom {
     border-top: #000 1px solid;
+    border-radius: 4px 4px 0 0;
   }
 
   button:hover {

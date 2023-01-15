@@ -1,12 +1,13 @@
 <script>
   export let sig;
+  export let active;
 
   let pos;
 
   $: pos = (1 - ($sig)) * 98 + 1;
 </script>
 
-<div>
+<div class:active={$active}>
   <svg>
     <line x1="50%" y1="0" x2="50%" y2="100%" />
     <circle cx="50%" cy="{ pos }%" />
@@ -15,11 +16,15 @@
 
 <style>
   div {
-    display: block;
+    display: none;
     width: 20px;
     height: 100%;
     padding: 2px 0px;
     box-sizing: border-box;
+  }
+
+  div.active {
+    display: block;
   }
 
   svg {

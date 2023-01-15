@@ -8,6 +8,7 @@ class AudioGraph {
     this.synth = null;
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 2048;
+    this.volume = 0.5;
   }
 
   setSynth(synth) {
@@ -23,15 +24,23 @@ class AudioGraph {
   }
 
   setVolume(value) {
-    this.gainNode.gain.value = value;
+    this.volume = value;
+    this.gainNode.gain.cancelScheduledValues(0);
+    this.gainNode.gain.linearRampToValueAtTime(value, this.ctx.currentTime + 0.1);
   }
 
-  pause() {
+  async pause() {
+    this.gainNode.gain.cancelScheduledValues(0);
+    this.gainNode.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
+    await new Promise(resolve => setTimeout(resolve, 150));
     this.ctx.suspend();
   }
 
-  resume() {
+  async resume() {
+    this.gainNode.gain.cancelScheduledValues(0);
+    this.gainNode.gain.value = 0;
     this.ctx.resume();
+    this.gainNode.gain.linearRampToValueAtTime(this.volume, this.ctx.currentTime + 0.1);
   }
 }
 

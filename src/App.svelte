@@ -5,6 +5,7 @@ import Synth from "./lib/Synth.svelte";
 import SynthMonitor from "./lib/SynthMonitor.svelte";
 import Sidebar from "./lib/Sidebar.svelte";
 import Titlebar from "./lib/Titlebar.svelte";
+import Player from "./lib/Player.svelte";
 
 import { modEngine, synthEngine } from "./lib/engine.js";
 
@@ -12,13 +13,13 @@ import { onMount } from 'svelte';
 
 onMount(async () => {
   await new Promise(r => setTimeout(r, 1000));
-  setInterval(() => {
-    modEngine.process.bind(modEngine)();
-  }, 10);
-  setInterval(() => {
-    modEngine.knobs.poll_param_mods.bind(modEngine.knobs)();
-    synthEngine.knobs.poll_param_mods.bind(synthEngine.knobs)();
-  }, 50);
+  // setInterval(() => {
+  //   modEngine.process.bind(modEngine)();
+  // }, 10);
+  // setInterval(() => {
+  //   modEngine.knobs.poll_param_mods.bind(modEngine.knobs)();
+  //   synthEngine.knobs.poll_param_mods.bind(synthEngine.knobs)();
+  // }, 50);
 });
 
 </script>
@@ -36,6 +37,10 @@ onMount(async () => {
     <Titlebar />
   </div>
   
+  <div class="player">
+    <Player />
+  </div>
+
   <div class="mod">
     <Modulation />
   </div>
@@ -59,7 +64,7 @@ onMount(async () => {
     grid-template-rows: 1fr 60px 1fr;
     grid-template-areas:
       "sidebar mod mod-mon"
-      "sidebar title title"
+      "sidebar title player"
       "sidebar synth synth-mon";
   }
 
@@ -73,14 +78,22 @@ onMount(async () => {
     justify-content: flex-start;
   }
 
+  .player {
+    grid-area: player;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* background-color: antiquewhite; */
+  }
+
   .synth {
     grid-area: synth;
-    background-color: #000;
+    /* background-color: #000; */
   }
 
   .mod {
     grid-area: mod;
-    background-color: #000;
+    /* background-color: #000; */
   }
 
   .synth-mon {

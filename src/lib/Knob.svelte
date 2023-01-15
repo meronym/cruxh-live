@@ -2,6 +2,9 @@
   import KnobMod from './KnobMod.svelte';
   import ModPreview from './KnobModPreview.svelte';
 
+  import { writable } from 'svelte/store';
+  let mod_active = writable(false);
+
   export let position;
   export let desc;
   export let value;
@@ -21,11 +24,11 @@
 
   <div class="slider">
     <input type="range" bind:value={ $value } min="0" max="1" step="0.01"/> 
-    <ModPreview sig={mod_sig} />
+    <ModPreview sig={mod_sig} active={mod_active} />
   </div>
 
   <div class="mod {position}">
-    <KnobMod cfg={mod_cfg} />
+    <KnobMod cfg={mod_cfg} active={mod_active} />
   </div>
 
 </div>

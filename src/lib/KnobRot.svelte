@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 
   export let value = 0;
+  export let active;
 
   let angle = valueToAngle(value);
   let center = {x: 0, y: 0};
@@ -72,33 +73,38 @@
 
 </script>
 
-<svg bind:this={svg} style="--angle: {angle}rad" on:pointerdown={onPointerDown}>
+<svg bind:this={svg} style="--angle: {angle}rad" class:active={$active} on:pointerdown={onPointerDown}>
     <circle cx="50%" cy="50%" />
-    <line x1="50%" y1="50%" x2="90%" y2="50%" id="pointer" />
+    <line x1="50%" y1="50%" x2="90%" y2="50%" />
 </svg>
 <!-- <p>{ value.toFixed(2) }</p> -->
 
 <style>
-    svg {
-        width: 32px;
-        height: 32px;
-    }
+  svg {
+    width: 32px;
+    height: 32px;
+    stroke: #ddd;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
 
-    circle {
-        r: calc(50% - 2px);
-        fill: #000;
-        stroke-width: 2px;
-        stroke: #fff;
-    }
+  svg.active {
+    opacity: 1;
+  }
 
-    #pointer {
-        stroke-width: 2px;
-        stroke: #fff;
-        transform-origin: center center;
-        transform: rotateZ(var(--angle));
-    }
+  circle {
+    r: calc(50% - 2px);
+    fill: #090909;
+    stroke-width: 2px;
+  }
 
-    p {
-        user-select: none;
-    }
+  line {
+    stroke-width: 2px;
+    transform-origin: center center;
+    transform: rotateZ(var(--angle));
+  }
+
+  p {
+    user-select: none;
+  }
 </style>
