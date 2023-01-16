@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { modEngine } from './engine.js';
+  import { cruxh } from "./_cruxh.js";
 
   export let index;
   let frameId;
@@ -11,7 +11,7 @@
   let modulators;
   let source = '-';
 
-  let unsub = modEngine.knobs.stores.modulators.subscribe((value) => {
+  let unsub = cruxh.modParams.stores.modulators.subscribe((value) => {
     if (value.find(x => x == source) === undefined) {
       if (value.length > 0) {
         source = value[index % value.length];
@@ -38,7 +38,7 @@
 
   function draw(ctx) {
     // sample new value and map it from (-1, 1) to (0, 1)
-    let value = (modEngine.outputs[source] + 1.0) / 2.0;
+    let value = (cruxh.modEngine.outputs[source] + 1.0) / 2.0;
     // add sampled value to points array
     points.push(value);
     // remove oldest points if array is too long

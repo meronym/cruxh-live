@@ -1,11 +1,11 @@
 <script>
-  import { audioGraph } from './agraph.js';
+  import { audio } from './_audio.js';
   import SynthOscilloscope from './SynthOscilloscope.svelte';
   
   let volume;
 
   function setVolume() {
-    audioGraph.setVolume(Math.pow(volume, 1.5));
+    audio.setVolume(Math.pow(volume, 1.5));
   }
 </script>
 
@@ -39,11 +39,6 @@
     /* justify-content: center; */
     align-items: center;
     /* background-color: blueviolet; */
-  }
-  .controls h2 {
-    /* background: red; */
-    font-size: 20px;
-    font-weight: 400;
   }
   
   .volume {

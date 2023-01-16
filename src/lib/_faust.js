@@ -55,29 +55,29 @@ class FaustSampleProcessor {
     let audio_heap_outputs = audio_heap_inputs + (this.numIn * sample_size);
 
     if (this.numIn > 0) {
-        this.ins = audio_heap_ptr_inputs;
-        for (let i = 0; i < this.numIn; i++) {
-            this.HEAP32[(this.ins >> 2) + i] = audio_heap_inputs + (sample_size * i);
-        }
+      this.ins = audio_heap_ptr_inputs;
+      for (let i = 0; i < this.numIn; i++) {
+        this.HEAP32[(this.ins >> 2) + i] = audio_heap_inputs + (sample_size * i);
+      }
 
-        // Prepare Ins buffer tables
-        let dspInChans = this.HEAP32.subarray(this.ins >> 2, (this.ins + this.numIn * ptr_size) >> 2);
-        for (let i = 0; i < this.numIn; i++) {
-            this.dspInChannnels[i] = this.HEAPF32.subarray(dspInChans[i] >> 2, (dspInChans[i] + sample_size) >> 2);
-        }
+      // Prepare Ins buffer tables
+      let dspInChans = this.HEAP32.subarray(this.ins >> 2, (this.ins + this.numIn * ptr_size) >> 2);
+      for (let i = 0; i < this.numIn; i++) {
+        this.dspInChannnels[i] = this.HEAPF32.subarray(dspInChans[i] >> 2, (dspInChans[i] + sample_size) >> 2);
+      }
     }
 
     if (this.numOut > 0) {
-        this.outs = audio_heap_ptr_outputs;
-        for (let i = 0; i < this.numOut; i++) {
-            this.HEAP32[(this.outs >> 2) + i] = audio_heap_outputs + (sample_size * i);
-        }
+      this.outs = audio_heap_ptr_outputs;
+      for (let i = 0; i < this.numOut; i++) {
+        this.HEAP32[(this.outs >> 2) + i] = audio_heap_outputs + (sample_size * i);
+      }
 
-        // Prepare Out buffer tables
-        let dspOutChans = this.HEAP32.subarray(this.outs >> 2, (this.outs + this.numOut * ptr_size) >> 2);
-        for (let i = 0; i < this.numOut; i++) {
-            this.dspOutChannnels[i] = this.HEAPF32.subarray(dspOutChans[i] >> 2, (dspOutChans[i] + sample_size) >> 2);
-        }
+      // Prepare Out buffer tables
+      let dspOutChans = this.HEAP32.subarray(this.outs >> 2, (this.outs + this.numOut * ptr_size) >> 2);
+      for (let i = 0; i < this.numOut; i++) {
+        this.dspOutChannnels[i] = this.HEAPF32.subarray(dspOutChans[i] >> 2, (dspOutChans[i] + sample_size) >> 2);
+      }
     }
   }
 
@@ -87,11 +87,11 @@ class FaustSampleProcessor {
   }
 
   setParamValue(path, val) {
-      this.HEAPF32[this.pathTable[path] >> 2] = val;
+    this.HEAPF32[this.pathTable[path] >> 2] = val;
   }
 
   getParamValue(path) {
-      return this.HEAPF32[this.pathTable[path] >> 2];
+    return this.HEAPF32[this.pathTable[path] >> 2];
   }
 
   process(inputs) {
@@ -116,7 +116,7 @@ class FaustSampleProcessor {
 
     // Copy outputs
     for (var chan = 0; chan < this.numOut; ++chan) {
-        this.outputs[chan] = this.dspOutChannnels[chan][0];
+      this.outputs[chan] = this.dspOutChannnels[chan][0];
     }
     return this.outputs;
   }
@@ -125,75 +125,75 @@ class FaustSampleProcessor {
 // Globals
 
 const importObject = {
-    env: {
-        memoryBase: 0,
-        tableBase: 0,
+  env: {
+    memoryBase: 0,
+    tableBase: 0,
 
-        // Integer version
-        _abs: Math.abs,
+    // Integer version
+    _abs: Math.abs,
 
-        // Float version
-        _acosf: Math.acos,
-        _asinf: Math.asin,
-        _atanf: Math.atan,
-        _atan2f: Math.atan2,
-        _ceilf: Math.ceil,
-        _cosf: Math.cos,
-        _expf: Math.exp,
-        _floorf: Math.floor,
-        _fmodf: function(x, y) { return x % y; },
-        _logf: Math.log,
-        _log10f: Math.log10,
-        _max_f: Math.max,
-        _min_f: Math.min,
-        _remainderf: function(x, y) { return x - Math.round(x/y) * y; },
-        _powf: Math.pow,
-        _roundf: Math.fround,
-        _sinf: Math.sin,
-        _sqrtf: Math.sqrt,
-        _tanf: Math.tan,
-        _acoshf: Math.acosh,
-        _asinhf: Math.asinh,
-        _atanhf: Math.atanh,
-        _coshf: Math.cosh,
-        _sinhf: Math.sinh,
-        _tanhf: Math.tanh,
-        _isnanf: Number.isNaN,
-        _isinff: function (x) { return !isFinite(x); },
-        _copysignf: function (x, y) { return Math.sign(x) === Math.sign(y) ? x : -x; },    
+    // Float version
+    _acosf: Math.acos,
+    _asinf: Math.asin,
+    _atanf: Math.atan,
+    _atan2f: Math.atan2,
+    _ceilf: Math.ceil,
+    _cosf: Math.cos,
+    _expf: Math.exp,
+    _floorf: Math.floor,
+    _fmodf: function(x, y) { return x % y; },
+    _logf: Math.log,
+    _log10f: Math.log10,
+    _max_f: Math.max,
+    _min_f: Math.min,
+    _remainderf: function(x, y) { return x - Math.round(x/y) * y; },
+    _powf: Math.pow,
+    _roundf: Math.fround,
+    _sinf: Math.sin,
+    _sqrtf: Math.sqrt,
+    _tanf: Math.tan,
+    _acoshf: Math.acosh,
+    _asinhf: Math.asinh,
+    _atanhf: Math.atanh,
+    _coshf: Math.cosh,
+    _sinhf: Math.sinh,
+    _tanhf: Math.tanh,
+    _isnanf: Number.isNaN,
+    _isinff: function (x) { return !isFinite(x); },
+    _copysignf: function (x, y) { return Math.sign(x) === Math.sign(y) ? x : -x; },    
 
-        // Double version
-        _acos: Math.acos,
-        _asin: Math.asin,
-        _atan: Math.atan,
-        _atan2: Math.atan2,
-        _ceil: Math.ceil,
-        _cos: Math.cos,
-        _exp: Math.exp,
-        _floor: Math.floor,
-        _fmod: function(x, y) { return x % y; },
-        _log: Math.log,
-        _log10: Math.log10,
-        _max_: Math.max,
-        _min_: Math.min,
-        _remainder:function(x, y) { return x - Math.round(x/y) * y; },
-        _pow: Math.pow,
-        _round: Math.fround,
-        _sin: Math.sin,
-        _sqrt: Math.sqrt,
-        _tan: Math.tan,
-        _acosh: Math.acosh,
-        _asinh: Math.asinh,
-        _atanh: Math.atanh,
-        _cosh: Math.cosh,
-        _sinh: Math.sinh,
-        _tanh: Math.tanh,
-        _isnan: Number.isNaN,
-        _isinf: function (x) { return !isFinite(x); },
-        _copysign: function (x, y) { return Math.sign(x) === Math.sign(y) ? x : -x; },    
+    // Double version
+    _acos: Math.acos,
+    _asin: Math.asin,
+    _atan: Math.atan,
+    _atan2: Math.atan2,
+    _ceil: Math.ceil,
+    _cos: Math.cos,
+    _exp: Math.exp,
+    _floor: Math.floor,
+    _fmod: function(x, y) { return x % y; },
+    _log: Math.log,
+    _log10: Math.log10,
+    _max_: Math.max,
+    _min_: Math.min,
+    _remainder:function(x, y) { return x - Math.round(x/y) * y; },
+    _pow: Math.pow,
+    _round: Math.fround,
+    _sin: Math.sin,
+    _sqrt: Math.sqrt,
+    _tan: Math.tan,
+    _acosh: Math.acosh,
+    _asinh: Math.asinh,
+    _atanh: Math.atanh,
+    _cosh: Math.cosh,
+    _sinh: Math.sinh,
+    _tanh: Math.tanh,
+    _isnan: Number.isNaN,
+    _isinf: function (x) { return !isFinite(x); },
+    _copysign: function (x, y) { return Math.sign(x) === Math.sign(y) ? x : -x; },    
 
-        table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' })
-    }
+    table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' })
+  }
 };
 
 
@@ -381,7 +381,8 @@ export class CodeParser {
   }
 };
 
-export async function buildFaust(code, name='modengine', sample_rate=100) {
+
+export async function buildFaustModulation(code, sample_rate=100, name='modengine') {
   let argv = ["-ftz", "2", "-I", "http://127.0.0.1:8000/../../libraries/"];
   let dsp = await internalFaustWrapper.compileCode(name, code, argv, true);
   if (!dsp) {
@@ -401,6 +402,7 @@ export async function buildFaust(code, name='modengine', sample_rate=100) {
   let code_parser = new CodeParser(code);
   
   return {
+    code: code,
     dsp: fproc,
     params: ui_parser.params,
     tabs: ui_parser.tabs,
@@ -413,8 +415,12 @@ export async function buildFaustAudio(audioContext, code) {
   let node = await compile(audioContext, code);
   let ui_parser = new UiParser(node.ui);
   return {
+    code: code,
     node: node,
     params: ui_parser.params,
     tabs: ui_parser.tabs,
   }
 };
+
+
+export const faustReady = internalFaustWrapper.ready;

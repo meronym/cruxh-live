@@ -7,19 +7,20 @@ import Sidebar from "./lib/Sidebar.svelte";
 import Titlebar from "./lib/Titlebar.svelte";
 import Player from "./lib/Player.svelte";
 
-import { modEngine, synthEngine } from "./lib/engine.js";
-
 import { onMount } from 'svelte';
 
+import { cruxh } from "./lib/_cruxh.js";
+import { faustReady } from "./lib/_faust.js";
+
 onMount(async () => {
-  await new Promise(r => setTimeout(r, 1000));
-  // setInterval(() => {
-  //   modEngine.process.bind(modEngine)();
-  // }, 10);
-  // setInterval(() => {
-  //   modEngine.knobs.poll_param_mods.bind(modEngine.knobs)();
-  //   synthEngine.knobs.poll_param_mods.bind(synthEngine.knobs)();
-  // }, 50);
+  await faustReady;
+  setInterval(() => {
+    cruxh.loop.bind(cruxh)();
+  }, 10);
+  setInterval(() => {
+    cruxh.modParams.poll_param_mods.bind(cruxh.modParams)();
+    cruxh.synthParams.poll_param_mods.bind(cruxh.synthParams)();
+  }, 50);
 });
 
 </script>

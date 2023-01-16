@@ -1,34 +1,34 @@
 <script>
-  import { createEventDispatcher } from "svelte";
-
+  import { cruxh } from "./_cruxh.js";
+  
+  export let name;
   export let position;
-  export let engine;
   export let hidden;
 
-  let name = engine.identifier;
-
   let editor;
-  let storageName = `${name}_code`;
-  let code = localStorage.getItem(storageName);
+  // let storageName = `${name}_code`;
+  // let code = localStorage.getItem(storageName);
+  let code = '';
   let error = null;
 
-  let dispatch = createEventDispatcher();
-  
   function save() {
     error = null;
-    localStorage.setItem(storageName, editor.value);
+    // localStorage.setItem(storageName, editor.value);
   }
 
   async function onUpdate() {
     error = null;
     try {
-      await engine.load_code(editor.value);
+      if (name == 'synth') {
+        let synth = await cruxh.buildSynth(editor.value);
+        cruxh.updateSynth(synth);
+      } else {
+        let mod = await cruxh.buildMod(editor.value);
+        cruxh.updateMod(mod);
+      }
     } catch (e) {
       console.error(e);
       error = e;
-    }
-    if (!error) {
-      // dispatch('updated');
     }
   }
 

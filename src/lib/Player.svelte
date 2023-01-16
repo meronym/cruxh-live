@@ -1,14 +1,14 @@
 <script>
-  import { audioGraph } from "./agraph.js";
+  import { audio } from "./_audio.js";
 
   let playing = false;
   
   async function togglePlay() {
     if (playing) {
-      await audioGraph.pause();
+      await audio.pause();
       playing = false;
     } else {
-      await audioGraph.resume();
+      await audio.resume();
       playing = true;
     }
   }

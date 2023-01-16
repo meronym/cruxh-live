@@ -2,15 +2,14 @@
   import Knob from './Knob.svelte';
   import { onDestroy } from 'svelte';
   
+  export let stores;
   export let position;
-  export let engine;
   export let hidden;
   
-  let store = engine.knobs.stores;
   let tabs;
   let active = null;
 
-  let unsub = store.tabs.subscribe((value) => {
+  let unsub = stores.tabs.subscribe((value) => {
     // if the active tab is gone, switch to the first tab from the new list
     if (value.find(x => x == active) === undefined) {
       if (value.length > 0)
@@ -44,10 +43,10 @@
       {#each tab.params as knob (knob.address)}
       <Knob 
         desc={knob}
-        value={store.norm_value[knob.address]}
-        mon={store.monitor_pre[knob.address]}
-        mod_cfg={store.mod_config[knob.address]}
-        mod_sig={store.mod_sig[knob.address]}
+        value={stores.norm_value[knob.address]}
+        mon={stores.monitor_pre[knob.address]}
+        mod_cfg={stores.mod_config[knob.address]}
+        mod_sig={stores.mod_sig[knob.address]}
         position={position}
       />
       {/each}

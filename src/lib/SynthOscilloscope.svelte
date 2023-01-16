@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { audioGraph } from './agraph.js';
+  import { audio } from './_audio.js';
 
   let frameId;
   let frameCount = -1;
@@ -11,8 +11,8 @@
   let canvasSpectro;
   let ctxSpectro;
 
-  let t = new Float32Array(audioGraph.analyser.fftSize);
-  let f = new Float32Array(audioGraph.analyser.frequencyBinCount);
+  let t = new Float32Array(audio.analyser.fftSize);
+  let f = new Float32Array(audio.analyser.frequencyBinCount);
   
   let zoom = 1;
   let zoomOffset = 0;
@@ -133,13 +133,13 @@
     frameCount++; // Reduce frame rate
     if (frameCount % 3 === 0) {
       frameCount = 0;
-      const sr = audioGraph.ctx.sampleRate;
+      const sr = audio.ctx.sampleRate;
       // const w = this.container.clientWidth;
       // const h = Math.floor(Math.min(w * 0.75, this.container.clientHeight));
       // this.canvas.width = w;
       // this.canvas.height = h;
-      audioGraph.analyser.getFloatTimeDomainData(t);
-      audioGraph.analyser.getFloatFrequencyData(f);
+      audio.analyser.getFloatTimeDomainData(t);
+      audio.analyser.getFloatFrequencyData(f);
       const freq = estimateFreq(f, sr);
       // const samp = this.t[this.t.length - 1];
       // const rms = getRms(this.t);

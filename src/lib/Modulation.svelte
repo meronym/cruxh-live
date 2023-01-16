@@ -1,9 +1,8 @@
 <script>
   import EnginePanel from "./EnginePanel.svelte";
-  import { modEngine } from "./engine.js";
 </script>
 
-<EnginePanel position="top" engine={modEngine} />
+<EnginePanel name="mod" position="top" />
 
 <style>
 </style>

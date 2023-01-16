@@ -1,5 +1,5 @@
 <script>
-  import { modEngine } from './engine.js';
+  import { cruxh } from "./_cruxh.js";
   import { onDestroy } from 'svelte';
 
   import RotKnob from './KnobRot.svelte';
@@ -8,10 +8,10 @@
   export let active;
 
   let modulators;
-  let source;
+  let source = '-';
   let amount;
 
-  let unsub = modEngine.knobs.stores.modulators.subscribe((value) => {
+  let unsub = cruxh.modParams.stores.modulators.subscribe((value) => {
     if (value.find(x => x == source) === undefined) {
       cfg.update((value) => {
         value.source = '-';
