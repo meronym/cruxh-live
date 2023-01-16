@@ -15,12 +15,13 @@
     URL.revokeObjectURL(a.href);
   }
 
-
   async function loadPatch(evt) {
     const [file] = evt.target.files
     if (!file) return;
-    const data = await file.text();
-    cruxh.loadPatch(JSON.parse(data));
+    evt.target.value = null;
+    let data = await file.text();
+    data = JSON.parse(data);
+    cruxh.loadPatch(data);
   }
 
 </script>
@@ -31,7 +32,7 @@
 
 <button on:click={savePatch}>Save</button>
 
-<input type="file" on:change={ loadPatch } />
+<input type="file" on:input={ loadPatch } />
 
 <!-- <button on:click={loadPatch}>Load</button> -->
 

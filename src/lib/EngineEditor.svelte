@@ -1,30 +1,44 @@
 <script>
   import { cruxh } from "./_cruxh.js";
-  
-  export let name;
-  export let position;
-  export let hidden;
+  import { onDestroy } from "svelte";
+
+  export let eview;
+  export let position;  // "top" or "bottom"
+  export let hidden;    // boolean
 
   let editor;
-  // let storageName = `${name}_code`;
-  // let code = localStorage.getItem(storageName);
   let code = '';
   let error = null;
 
-  function save() {
-    error = null;
-    // localStorage.setItem(storageName, editor.value);
+  if (eview.name == "synth") {
+    let unsub = cruxh.synth.stores.code.subscribe((value) => {
+      code = value;
+    });
+    onDestroy(unsub);
+  } else {
+    let unsub = cruxh.modulation.stores.code.subscribe((value) => {
+      code = value;
+    });
+    onDestroy(unsub);
   }
 
   async function onUpdate() {
     error = null;
     try {
-      if (name == 'synth') {
-        let synth = await cruxh.buildSynth(editor.value);
-        cruxh.updateSynth(synth);
+      if (eview.name == "synth") {
+        let newSynth = await cruxh.buildSynth(editor.value);
+        if (cruxh.synth.engine) {
+          newSynth.loadFrom(cruxh.synth.engine);
+        }
+        cruxh.synth.update(newSynth);
       } else {
-        let mod = await cruxh.buildMod(editor.value);
-        cruxh.updateMod(mod);
+        let newMod = await cruxh.buildModulation(editor.value);
+        if (cruxh.modulation.engine) {
+          newMod.loadFrom(cruxh.modulation.engine);
+        }
+        cruxh.modulation.update(newMod);
+        cruxh.modulation.updateModSources(newMod.output_names);
+        cruxh.synth.updateModSources(newMod.output_names);
       }
     } catch (e) {
       console.error(e);
@@ -56,18 +70,18 @@
 
 
 
-<div class="wrapper { position }" class:hidden={hidden}>
+<div class="wrapper {position}" class:hidden={hidden}>
   
   <div class="content">
     {#if error}
-      <div class="error" on:click={ clearError } on:keypress={ clearError }>
+      <div class="error" on:click={clearError} on:keypress={clearError}>
         <p>{error}</p>
       </div>
     {/if}
     <textarea 
-    bind:this={ editor } 
-    on:input={ save }
-    on:keydown={ keyDown }>{ code }</textarea>
+    bind:this={editor} 
+    on:input={clearError}
+    on:keydown={keyDown}>{code}</textarea>
   </div>
   
   <div class="controls">

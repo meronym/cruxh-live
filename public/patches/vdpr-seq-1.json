@@ -6,34 +6,14 @@
       "/FaustDSP/freq": 0.16595869074375608,
       "/FaustDSP/ratio": 0.32
     },
-    "mods": [
-      {
+    "mods": {
+      "/FaustDSP/freq": {
         "source": "shsq",
-        "amount": -0.7141589578577607,
-        "param": "/FaustDSP/freq"
+        "amount": -0.7141589578577607
       },
-      {
+      "/FaustDSP/ratio": {
         "source": "lfo1",
-        "amount": 0.5422991944212278,
-        "param": "/FaustDSP/ratio"
-      }
-    ],
-    "scopes": [
-      "-",
-      "-",
-      "-"
-    ],
-    "quant": {
-      "interval": {
-        "list": [
-          0,
-          2,
-          4,
-          5,
-          7,
-          9,
-          11
-        ]
+        "amount": 0.5422991944212278
       }
     }
   },
@@ -53,57 +33,47 @@
       "/FaustDSP/Forced Van der Pol/VdP Oscillator/Drive": 4.950550000000001,
       "/FaustDSP/Forced Van der Pol/VdP Oscillator/L/R Balance": 0.42
     },
-    "mods": [
-      {
+    "mods": {
+      "/FaustDSP/Forced Van der Pol/Forcing Source/Density": {
         "source": "square",
-        "amount": 0.0423895765816897,
-        "param": "/FaustDSP/Forced Van der Pol/Forcing Source/Density"
+        "amount": 0.0423895765816897
       },
-      {
+      "/FaustDSP/Forced Van der Pol/Forcing Source/Freq": {
         "source": "shsq",
-        "amount": 0.13536988496903976,
-        "param": "/FaustDSP/Forced Van der Pol/Forcing Source/Freq"
+        "amount": 0.13536988496903976
       },
-      {
+      "/FaustDSP/Forced Van der Pol/Forcing Source/Q": {
         "source": "lfo1",
-        "amount": 0.046580275587476884,
-        "param": "/FaustDSP/Forced Van der Pol/Forcing Source/Q"
+        "amount": 0.046580275587476884
       },
-      {
+      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Inputs/Force": {
         "source": "lfo1",
-        "amount": 0.13077031857569565,
-        "param": "/FaustDSP/Forced Van der Pol/VdP Oscillator/Inputs/Force"
+        "amount": 0.13077031857569565
       },
-      {
+      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Inputs/Feedback": {
         "source": "square",
-        "amount": -0.03784988480440871,
-        "param": "/FaustDSP/Forced Van der Pol/VdP Oscillator/Inputs/Feedback"
+        "amount": -0.03784988480440871
       },
-      {
+      "/FaustDSP/Forced Van der Pol/VdP Oscillator/dt": {
         "source": "lfo1",
-        "amount": -0.0680334065842173,
-        "param": "/FaustDSP/Forced Van der Pol/VdP Oscillator/dt"
+        "amount": -0.0680334065842173
       },
-      {
+      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Limit": {
         "source": "shsq",
-        "amount": -0.12293540136719766,
-        "param": "/FaustDSP/Forced Van der Pol/VdP Oscillator/Limit"
+        "amount": -0.12293540136719766
       },
-      {
+      "/FaustDSP/Forced Van der Pol/VdP Oscillator/DC Block": {
         "source": "sh",
-        "amount": 0.5476702843361216,
-        "param": "/FaustDSP/Forced Van der Pol/VdP Oscillator/DC Block"
+        "amount": 0.5476702843361216
       },
-      {
+      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Drive": {
         "source": "lfo1",
-        "amount": -0.19927422603393283,
-        "param": "/FaustDSP/Forced Van der Pol/VdP Oscillator/Drive"
+        "amount": -0.19927422603393283
       },
-      {
+      "/FaustDSP/Forced Van der Pol/VdP Oscillator/L/R Balance": {
         "source": "shsq",
-        "amount": -0.2088570448919534,
-        "param": "/FaustDSP/Forced Van der Pol/VdP Oscillator/L/R Balance"
+        "amount": -0.2088570448919534
       }
-    ]
+    }
   }
 }

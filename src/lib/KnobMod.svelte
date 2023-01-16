@@ -11,7 +11,7 @@
   let source = '-';
   let amount;
 
-  let unsub = cruxh.modParams.stores.modulators.subscribe((value) => {
+  let unsub = cruxh.modulation.stores.modulators.subscribe((value) => {
     if (value.find(x => x == source) === undefined) {
       cfg.update((value) => {
         value.source = '-';

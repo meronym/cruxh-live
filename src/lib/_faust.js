@@ -336,7 +336,7 @@ export class UiParser {
     // sanitize tab contents
     let sanitized_tabs = {};
     for (let [tab, params] of Object.entries(omap)) {
-      sanitized_tabs[tab] = this.sanitize_params(params);
+      sanitized_tabs[tab] = params.map((p) => ({ address: p.address, label: p.label}));
     }
 
     // sort tabs by position
@@ -355,6 +355,16 @@ export class UiParser {
     return final_tabs;
   }
 };
+
+/*
+tabs = [
+  {
+    label: 'Frequencies',
+    params: ['/synth/osc1/Freq', '/synth/osc2/Freq', '/synth/osc3/Freq', '/synth/osc4/Freq']
+  }
+];
+*/
+
 
 export class CodeParser {
   constructor(code) {
@@ -402,11 +412,12 @@ export async function buildFaustModulation(code, sample_rate=100, name='modengin
   let code_parser = new CodeParser(code);
   
   return {
-    code: code,
     dsp: fproc,
+    code: code,
     params: ui_parser.params,
-    tabs: ui_parser.tabs,
+    inputs: code_parser.input_names,
     outputs: code_parser.output_names,
+    tabs: ui_parser.tabs,
   };
 };
 
@@ -415,9 +426,14 @@ export async function buildFaustAudio(audioContext, code) {
   let node = await compile(audioContext, code);
   let ui_parser = new UiParser(node.ui);
   return {
+    dsp: node,
     code: code,
-    node: node,
     params: ui_parser.params,
+    // FIXME
+    // input and output descriptors not needed by downstream code
+    // assuming always stereo out and no inputs
+    inputs: [],
+    outputs: [],
     tabs: ui_parser.tabs,
   }
 };

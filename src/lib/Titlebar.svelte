@@ -1,10 +1,21 @@
 <script>
   import cruxhLogo from '../assets/CRUXH.svg';
+  import { cruxh } from './_cruxh.js';
+
+  import { onDestroy } from 'svelte';
+
+  let patchName;
+
+  let unsub = cruxh.patchNameStore.subscribe((value) => {
+    patchName = value;
+  });
+  onDestroy(unsub);
+
 </script>
 
 <div class="title">
   <!-- <img src={cruxhLogo} alt="CRUXH" /> -->
-  <h1>Driven Van der Pol Oscillator</h1>
+  <h1>{patchName}</h1>
 </div>
 
 <style>

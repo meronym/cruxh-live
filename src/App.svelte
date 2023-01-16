@@ -14,13 +14,13 @@ import { faustReady } from "./lib/_faust.js";
 
 onMount(async () => {
   await faustReady;
-  setInterval(() => {
-    cruxh.loop.bind(cruxh)();
-  }, 10);
-  setInterval(() => {
-    cruxh.modParams.poll_param_mods.bind(cruxh.modParams)();
-    cruxh.synthParams.poll_param_mods.bind(cruxh.synthParams)();
-  }, 50);
+  // setInterval(() => {
+  //   cruxh.loop.bind(cruxh)();
+  // }, 10);
+  // setInterval(() => {
+  //   cruxh.modParams.poll_param_mods.bind(cruxh.modParams)();
+  //   cruxh.synthParams.poll_param_mods.bind(cruxh.synthParams)();
+  // }, 50);
 });
 
 </script>

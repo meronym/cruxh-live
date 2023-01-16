@@ -2,9 +2,8 @@
   import EngineEditor from "./EngineEditor.svelte";
   import EngineToggleSwitch from "./EngineToggleSwitch.svelte";
   import EngineUI from "./EngineUI.svelte";
-  import { cruxh } from "./_cruxh.js";
 
-  export let name;
+  export let eview;
   export let position;
 
   let editMode = false;
@@ -21,10 +20,10 @@
     <EngineToggleSwitch on:change={ changeEditMode } />
   </div>
 
-  <EngineEditor name={name} position={position} hidden={!editMode} />
+  <EngineEditor eview={eview} position={position} hidden={!editMode} />
   
   <EngineUI 
-    stores={name == 'synth' ? cruxh.synthParams.stores : cruxh.modParams.stores}
+    stores={eview.stores}
     position={position}
     hidden={editMode} />
 

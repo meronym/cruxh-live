@@ -1,8 +1,9 @@
 <script>
   import EnginePanel from "./EnginePanel.svelte";
+  import { cruxh } from "./_cruxh.js";
 </script>
 
-<EnginePanel name="mod" position="top" />
+<EnginePanel eview={cruxh.modulation} position="top" />
 
 <style>
 </style>
