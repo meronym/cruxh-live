@@ -1,4 +1,4 @@
-import { internalFaustWrapper, compile } from 'mosfez-faust';
+import { internalFaustWrapper, compile } from './_mfaust.js';
 
 class FaustSampleProcessor {
   constructor(wasm_instance, descriptor) {
@@ -34,49 +34,58 @@ class FaustSampleProcessor {
     // Memory allocator
     let ptr_size = 4;
     let sample_size = 4;
-    
+
     this.HEAP = this.factory.memory.buffer;
     this.HEAP32 = new Int32Array(this.HEAP);
     this.HEAPF32 = new Float32Array(this.HEAP);
-    
+
     // Start of HEAP index
     // DSP is placed first with index 0.
     this.dsp = 0;
-    
+
     // Audio buffer start at the end of DSP.
     let audio_heap_ptr = parseInt(this.descriptor.size);
 
     // Setup pointers offset
     let audio_heap_ptr_inputs = audio_heap_ptr;
-    let audio_heap_ptr_outputs = audio_heap_ptr_inputs + (this.numIn * ptr_size);
+    let audio_heap_ptr_outputs = audio_heap_ptr_inputs + this.numIn * ptr_size;
 
     // Setup buffer offset
-    let audio_heap_inputs = audio_heap_ptr_outputs + (this.numOut * ptr_size);
-    let audio_heap_outputs = audio_heap_inputs + (this.numIn * sample_size);
+    let audio_heap_inputs = audio_heap_ptr_outputs + this.numOut * ptr_size;
+    let audio_heap_outputs = audio_heap_inputs + this.numIn * sample_size;
 
     if (this.numIn > 0) {
       this.ins = audio_heap_ptr_inputs;
       for (let i = 0; i < this.numIn; i++) {
-        this.HEAP32[(this.ins >> 2) + i] = audio_heap_inputs + (sample_size * i);
+        this.HEAP32[(this.ins >> 2) + i] = audio_heap_inputs + sample_size * i;
       }
 
       // Prepare Ins buffer tables
       let dspInChans = this.HEAP32.subarray(this.ins >> 2, (this.ins + this.numIn * ptr_size) >> 2);
       for (let i = 0; i < this.numIn; i++) {
-        this.dspInChannnels[i] = this.HEAPF32.subarray(dspInChans[i] >> 2, (dspInChans[i] + sample_size) >> 2);
+        this.dspInChannnels[i] = this.HEAPF32.subarray(
+          dspInChans[i] >> 2,
+          (dspInChans[i] + sample_size) >> 2
+        );
       }
     }
 
     if (this.numOut > 0) {
       this.outs = audio_heap_ptr_outputs;
       for (let i = 0; i < this.numOut; i++) {
-        this.HEAP32[(this.outs >> 2) + i] = audio_heap_outputs + (sample_size * i);
+        this.HEAP32[(this.outs >> 2) + i] = audio_heap_outputs + sample_size * i;
       }
 
       // Prepare Out buffer tables
-      let dspOutChans = this.HEAP32.subarray(this.outs >> 2, (this.outs + this.numOut * ptr_size) >> 2);
+      let dspOutChans = this.HEAP32.subarray(
+        this.outs >> 2,
+        (this.outs + this.numOut * ptr_size) >> 2
+      );
       for (let i = 0; i < this.numOut; i++) {
-        this.dspOutChannnels[i] = this.HEAPF32.subarray(dspOutChans[i] >> 2, (dspOutChans[i] + sample_size) >> 2);
+        this.dspOutChannnels[i] = this.HEAPF32.subarray(
+          dspOutChans[i] >> 2,
+          (dspOutChans[i] + sample_size) >> 2
+        );
       }
     }
   }
@@ -96,7 +105,7 @@ class FaustSampleProcessor {
 
   process(inputs) {
     inputs = inputs || [];
-    
+
     // Check inputs
     if (inputs.length != this.numIn) {
       throw new Error(`process() requires ${this.numIn} input values`);
@@ -110,8 +119,8 @@ class FaustSampleProcessor {
     // Compute one sample
     try {
       this.factory.compute(this.dsp, 1, this.ins, this.outs);
-    } catch(e) {
-      console.log("ERROR in compute (" + e + ")");
+    } catch (e) {
+      console.log('ERROR in compute (' + e + ')');
     }
 
     // Copy outputs
@@ -141,12 +150,16 @@ const importObject = {
     _cosf: Math.cos,
     _expf: Math.exp,
     _floorf: Math.floor,
-    _fmodf: function(x, y) { return x % y; },
+    _fmodf: function (x, y) {
+      return x % y;
+    },
     _logf: Math.log,
     _log10f: Math.log10,
     _max_f: Math.max,
     _min_f: Math.min,
-    _remainderf: function(x, y) { return x - Math.round(x/y) * y; },
+    _remainderf: function (x, y) {
+      return x - Math.round(x / y) * y;
+    },
     _powf: Math.pow,
     _roundf: Math.fround,
     _sinf: Math.sin,
@@ -159,8 +172,12 @@ const importObject = {
     _sinhf: Math.sinh,
     _tanhf: Math.tanh,
     _isnanf: Number.isNaN,
-    _isinff: function (x) { return !isFinite(x); },
-    _copysignf: function (x, y) { return Math.sign(x) === Math.sign(y) ? x : -x; },    
+    _isinff: function (x) {
+      return !isFinite(x);
+    },
+    _copysignf: function (x, y) {
+      return Math.sign(x) === Math.sign(y) ? x : -x;
+    },
 
     // Double version
     _acos: Math.acos,
@@ -171,12 +188,16 @@ const importObject = {
     _cos: Math.cos,
     _exp: Math.exp,
     _floor: Math.floor,
-    _fmod: function(x, y) { return x % y; },
+    _fmod: function (x, y) {
+      return x % y;
+    },
     _log: Math.log,
     _log10: Math.log10,
     _max_: Math.max,
     _min_: Math.min,
-    _remainder:function(x, y) { return x - Math.round(x/y) * y; },
+    _remainder: function (x, y) {
+      return x - Math.round(x / y) * y;
+    },
     _pow: Math.pow,
     _round: Math.fround,
     _sin: Math.sin,
@@ -189,19 +210,22 @@ const importObject = {
     _sinh: Math.sinh,
     _tanh: Math.tanh,
     _isnan: Number.isNaN,
-    _isinf: function (x) { return !isFinite(x); },
-    _copysign: function (x, y) { return Math.sign(x) === Math.sign(y) ? x : -x; },    
+    _isinf: function (x) {
+      return !isFinite(x);
+    },
+    _copysign: function (x, y) {
+      return Math.sign(x) === Math.sign(y) ? x : -x;
+    },
 
-    table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' })
-  }
+    table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' }),
+  },
 };
-
 
 export class UiParser {
   constructor(ui_descriptor) {
     // takes in a json ui descriptor, as returned by the faust compiler
     this.ui_descriptor = ui_descriptor;
-    
+
     // path table stores a dictionary of address: index pairs
     // for every input (slider, etc.) and output (bargraph) in the ui
     this.path_table = {};
@@ -211,7 +235,7 @@ export class UiParser {
     this.params = [];
     let tabs = UiParser.parse_ui(this.ui_descriptor, this.params, UiParser.collect_params);
     this.params = this.sanitize_params(this.params);
-    // tabs stores a tree of depth 1, with the first level being the tabs and 
+    // tabs stores a tree of depth 1, with the first level being the tabs and
     // the second level being the param descriptors (in the same format as this.params[])
     this.tabs = this.sanitize_tabs(tabs);
   }
@@ -219,13 +243,13 @@ export class UiParser {
   // JSON parsing functions
   static parse_ui(ui, obj, callback) {
     let tabs = {
-      active: "/",
-      omap: { "/": [] },
-      list: [{ label: "/", meta: [{ "-1": "" }]}],
+      active: '/',
+      omap: { '/': [] },
+      list: [{ label: '/', meta: [{ '-1': '' }] }],
     };
     for (var i = 0; i < ui.length; i++) {
       let group = ui[i];
-      if (group.type === "tgroup") {
+      if (group.type === 'tgroup') {
         tabs.active = group.label;
         if (!Object.hasOwn(tabs.omap, tabs.active)) {
           tabs.omap[tabs.active] = [];
@@ -235,15 +259,15 @@ export class UiParser {
       if (group.items) {
         UiParser.parse_items(group.items, obj, tabs, callback);
       }
-      if (group.type === "tgroup") {
-        tabs.active = "/";
+      if (group.type === 'tgroup') {
+        tabs.active = '/';
       }
     }
     let keys = Object.keys(tabs.omap);
     for (let tab of keys) {
       if (tabs.omap[tab].length === 0) {
         delete tabs.omap[tab];
-        tabs.list = tabs.list.filter((item) => item.label !== tab);
+        tabs.list = tabs.list.filter(item => item.label !== tab);
       }
     }
     return tabs;
@@ -256,28 +280,27 @@ export class UiParser {
   }
 
   static path_table(item, obj, tabs, callback) {
-    if (item.type === "vgroup"
-        || item.type === "hgroup"
-        || item.type === "tgroup") {
+    if (item.type === 'vgroup' || item.type === 'hgroup' || item.type === 'tgroup') {
       UiParser.parse_items(item.items, obj, tabs, callback);
-    } else if (item.type === "hbargraph"
-                || item.type === "vbargraph") {
+    } else if (item.type === 'hbargraph' || item.type === 'vbargraph') {
       // Keep monitors (bargraph) adresses
       obj[item.address] = parseInt(item.index);
-    } else if (item.type === "vslider"
-                || item.type === "hslider"
-                || item.type === "button"
-                || item.type === "checkbox"
-                || item.type === "nentry") {
+    } else if (
+      item.type === 'vslider' ||
+      item.type === 'hslider' ||
+      item.type === 'button' ||
+      item.type === 'checkbox' ||
+      item.type === 'nentry'
+    ) {
       // Keep params adresses
       obj[item.address] = parseInt(item.index);
     }
   }
 
   static collect_params(item, obj, tabs, callback) {
-    if (item.type === "vgroup" || item.type === "hgroup") {
+    if (item.type === 'vgroup' || item.type === 'hgroup') {
       UiParser.parse_items(item.items, obj, tabs, callback);
-    } else if (item.type === "tgroup") {
+    } else if (item.type === 'tgroup') {
       let parent_tab = tabs.active;
       tabs.active = item.label;
       if (!Object.hasOwn(tabs.omap, tabs.active)) {
@@ -286,11 +309,13 @@ export class UiParser {
       }
       UiParser.parse_items(item.items, obj, tabs, callback);
       tabs.active = parent_tab;
-    } else if (item.type === "vslider"
-              || item.type === "hslider"
-              || item.type === "button"
-              || item.type === "checkbox"
-              || item.type === "nentry") {
+    } else if (
+      item.type === 'vslider' ||
+      item.type === 'hslider' ||
+      item.type === 'button' ||
+      item.type === 'checkbox' ||
+      item.type === 'nentry'
+    ) {
       obj.push(item);
       tabs.omap[tabs.active].push(item);
     }
@@ -299,10 +324,10 @@ export class UiParser {
   sanitize_meta(meta) {
     // load position from meta into a dedicated field
     let sane_meta = {};
-    for (let m of (meta || [])) {
+    for (let m of meta || []) {
       let key = Object.keys(m)[0];
       if (!isNaN(key)) {
-        sane_meta["position"] = parseInt(key);
+        sane_meta['position'] = parseInt(key);
       } else {
         sane_meta[key] = m[key];
       }
@@ -321,8 +346,8 @@ export class UiParser {
         init: item.init,
         min: item.min,
         max: item.max,
-        scale: meta.scale || "linear",
-        unit: meta.unit || "",
+        scale: meta.scale || 'linear',
+        unit: meta.unit || '',
         position: meta.position || 0,
       });
     }
@@ -331,30 +356,30 @@ export class UiParser {
   }
 
   sanitize_tabs(tabs) {
-    let {omap, list} = tabs;
+    let { omap, list } = tabs;
 
     // sanitize tab contents
     let sanitized_tabs = {};
     for (let [tab, params] of Object.entries(omap)) {
-      sanitized_tabs[tab] = params.map((p) => ({ address: p.address, label: p.label}));
+      sanitized_tabs[tab] = params.map(p => ({ address: p.address, label: p.label }));
     }
 
     // sort tabs by position
     let ordered_tabs = [];
     for (let tab of list) {
       let meta = this.sanitize_meta(tab.meta);
-      ordered_tabs.push({label: tab.label, position: meta.position || 0});
+      ordered_tabs.push({ label: tab.label, position: meta.position || 0 });
     }
     ordered_tabs.sort((a, b) => a.position - b.position);
 
     // build final tab list
     let final_tabs = [];
     for (let tab of ordered_tabs) {
-      final_tabs.push({label: tab.label, params: sanitized_tabs[tab.label]});
+      final_tabs.push({ label: tab.label, params: sanitized_tabs[tab.label] });
     }
     return final_tabs;
   }
-};
+}
 
 /*
 tabs = [
@@ -364,7 +389,6 @@ tabs = [
   }
 ];
 */
-
 
 export class CodeParser {
   constructor(code) {
@@ -389,17 +413,16 @@ export class CodeParser {
       }
     }
   }
-};
+}
 
-
-export async function buildFaustModulation(code, sample_rate=100, name='modengine') {
-  let argv = ["-ftz", "2", "-I", "http://127.0.0.1:8000/../../libraries/"];
+export async function buildFaustModulation(code, sample_rate = 100, name = 'modengine') {
+  let argv = ['-ftz', '2', '-I', 'http://127.0.0.1:8000/../../libraries/'];
   let dsp = await internalFaustWrapper.compileCode(name, code, argv, true);
   if (!dsp) {
     throw new Error(internalFaustWrapper.error_msg);
   }
   let { instance, module } = await WebAssembly.instantiate(dsp.code, importObject);
-  
+
   let helperCode = dsp.helpers + `\nreturn getJSON${name}();`;
   let desc = JSON.parse(new Function(helperCode)());
   // store wasm size for future reference
@@ -407,10 +430,10 @@ export async function buildFaustModulation(code, sample_rate=100, name='modengin
 
   let fproc = new FaustSampleProcessor(instance, desc);
   fproc.init(sample_rate);
-  
+
   let ui_parser = new UiParser(desc.ui);
   let code_parser = new CodeParser(code);
-  
+
   return {
     dsp: fproc,
     code: code,
@@ -419,8 +442,7 @@ export async function buildFaustModulation(code, sample_rate=100, name='modengin
     outputs: code_parser.output_names,
     tabs: ui_parser.tabs,
   };
-};
-
+}
 
 export async function buildFaustAudio(audioContext, code) {
   let node = await compile(audioContext, code);
@@ -435,8 +457,7 @@ export async function buildFaustAudio(audioContext, code) {
     inputs: [],
     outputs: [],
     tabs: ui_parser.tabs,
-  }
-};
-
+  };
+}
 
 export const faustReady = internalFaustWrapper.ready;
