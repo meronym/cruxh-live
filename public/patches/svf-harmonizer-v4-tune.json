@@ -1,0 +1,87 @@
+{
+  "name": "SVF Harmonizer (v4) Tune",
+  "modulation": {
+    "code": "import(\"stdfaust.lib\");\n\nf = vslider(\"freq [scale:log] [unit:Hz]\", 1, 0.1, 10, 0.01);\nmix = vslider(\"ratio\", 1, 0, 1, 0.01);\n\nprocess = lfo1, square, sh, shsq with {\n\tlfo1 = os.osc(f/2);\n  square = os.lf_squarewave(2*f);\n\tsh = no.noise : ba.sAndH(os.lf_imptrain(f/4));\n  shsq = square, sh : si.interpolate(mix);\n};\n",
+    "params": {
+      "/FaustDSP/freq": 0.18197008586099836,
+      "/FaustDSP/ratio": 0.37
+    },
+    "mods": {
+      "/FaustDSP/freq": {
+        "source": "shsq",
+        "amount": -0.7141589578577607
+      },
+      "/FaustDSP/ratio": {
+        "source": "lfo1",
+        "amount": 0.5422991944212278
+      }
+    },
+    "scopes": [
+      "lfo1",
+      "square",
+      "shsq"
+    ]
+  },
+  "synth": {
+    "code": "import(\"stdfaust.lib\");\n\nosc(f, shape) = phasor(f) : sine <: odd(f), even(f) : mix(shape) with {\n    phasor(freq) = ph(0, freq) with {\n        ph(phase, freq) = (+(phase-phase') : ma.frac) ~ +(freq/ma.SR);\n    };\n\n    sine(phase) = cos(phase * 2 * ma.PI);\n\n    odd(freq, sig) = sig * index : ma.tanh with {\n        index = 4.22;\n        // TODO fix aliasing by adjusting index as a function of freq\n    };\n\n    even(freq, sig) = pow(sig, index) : fi.dcblocker with {\n        index = 422;\n        // TODO fix aliasing by adjusting index as a function of freq\n    };\n\n    mix(balance, a, b) = a * balance + b * (1 - balance);\n};\n\n\nui(x) = hgroup(\"SVF\", x);\n\nuiA(x) = ui(hgroup(\"[1]Osc A\", x));\nuiAFreq = uiA(vslider(\"[1]Freq[unit:Hz][scale:log]\", 55, 10, 220, 0.01) : si.smoo); // : qu.quantizeSmoothed(27.5, qu.mixo);\nuiAShape = uiA(vslider(\"[2]Shape\", 0.38, 0, 1, 0.01) : si.smoo);\n\nuiB(x) = ui(hgroup(\"[2]Osc B\", x));\nuiBFreq = uiAFreq * ba.semi2ratio(uiBSemis + uiBDetune) with {\n    uiBSemis = uiB(vslider(\"[1]Semis\", 0, -24, 24, 1));\n    uiBDetune = uiB(vslider(\"[2]Detune\", 0.01, -1, 1, 0.01)) : normDetune : si.smoo with {\n        normDetune(x) = sign(x) * x^2;\n        sign(x) = -1 * (x<0) + (x>=0);\n    };\n};\nuiBShape = uiB(vslider(\"[3]Shape\", 0.87, 0, 1, 0.01) : si.smoo);\n\nuiFoldAmt = ui(hgroup(\"[4]Folder\", vslider(\"[1]Index\", 2.21, 1, 10, 0.01) : si.smoo));\n\nuiR(x) = ui(hgroup(\"[5]ResoDrive\", x));\nuiRFreq = uiR(vslider(\"[1]Freq[unit:Hz][scale:log]\", 440, 110, 6600, 0.1)) : si.smoo : qu.quantizeSmoothed(uiAFreq, qu.penta);\nuiRGrit = uiR(vslider(\"[2]Grit\", 0, 0, 1, 0.01) : seq(i, 4, sqrt) : si.smoo);\nuiRWet = uiR(vslider(\"[3]DryWet\", 0, 0, 1, 0.01) : si.smoo);\n\nuiMix(x) = ui(hgroup(\"[3]Mix\", x));\nuiAMix = uiMix(vslider(\"[1]A\", 0.62, 0, 1, 0.01) : ba.lin2LogGain : si.smoo);\nuiBMix = uiMix(vslider(\"[2]B\", 0.86, 0, 1, 0.01) : ba.lin2LogGain : si.smoo);\n\n/////////// FILTERS\n\nswipe(freq, x, start) = freq * ratio with {\n    ratio = ba.semi2ratio(semis);\n    semis = si.interpolate(x, start, audibleSemis(freq));\n    audibleSemis(freq) = floor(12 * ma.log2((ma.SR / 2) / freq));\n};\n\nfiln = fi.svf.notch(freq, 0.11) with {\n    freq = swipe(min(uiAFreq, uiBFreq), normFreq, -24);\n    normFreq = os.oscs(0.111 * uiFilRate) / 2 + 0.5;\n};\n\nfilb = fi.svf.bell(freq, 0.9, 9) with {\n    freq = swipe(min(uiAFreq, uiBFreq), normFreq, 4);\n    normFreq = os.oscs(0.13 * uiFilRate) / 2 + 0.5;\n};\n\n// uiFilRate = hslider(\"[4]LFO rate\", 0.8, 0.1, 100, 0.001) : si.smoo;\nuiFilRate = 0.8;\n\noA = osc(uiAFreq, uiAShape);\noB = osc(uiBFreq, uiBShape);\noAB = oA, oB : *(uiAMix), *(uiBMix) :> /(max(1, uiAMix + uiBMix));\n\n\n//////////// FOLDER\n\n// Feedback Saturating Wavefolder\nfswf(amount, signal) = swf(amount, signal) * -0.5 : + ~ fb : /(1.3) with {\n    fb = ma.tanh : *(0.8);\n\n    // Saturating Wave Folder\n    swf(amount, signal) = signal <: ma.tanh, wf(amount, signal) :> *(0.5);\n\n    // Basic Sinusoidal Wave Folder\n    wf(amount, signal) = sin(amount * signal * 2 * ma.PI);\n};\n\n//////////// Resonating Overdrive\n\nresodrive(freq, grit, mix) = _ <: _, wet : *(1-mix), *(mix) :> _ with {\n    wet = fi.nlf2(freq, 0.995) :  _, ! : /(100 * (1-grit)) : ma.tanh;\n};\n\nprocess = oAB : filn : filb : ma.tanh : fswf(uiFoldAmt) : resodrive(uiRFreq, uiRGrit, uiRWet) <: _,_;\n\n\n/// OTHER STUFF\n\n// drive = ef.cubicnl_nodc(hslider(\"sat\", 0, 0, 1, 0.01), hslider(\"offset\", 0, 0, 100, 0.01));\n// rectifier(alpha, beta, signal) = (ma.E ^ (alpha * signal) - 1) * beta;\n// rectif = rectifier(3, .05);",
+    "params": {
+      "/SVF/Osc A/Freq": 84.3862425886391,
+      "/SVF/Osc B/Semis": 0,
+      "/SVF/Mix/A": 0.42,
+      "/SVF/Folder/Index": 3.43,
+      "/SVF/ResoDrive/Freq": 666.4678978351228,
+      "/SVF/Osc A/Shape": 0.5,
+      "/SVF/Osc B/Detune": -0.040000000000000036,
+      "/SVF/Mix/B": 0.38,
+      "/SVF/ResoDrive/Grit": 0.34,
+      "/SVF/Osc B/Shape": 0.7,
+      "/SVF/ResoDrive/DryWet": 0.48
+    },
+    "mods": {
+      "/SVF/Osc A/Freq": {
+        "source": "-",
+        "amount": -0.08614246598928063
+      },
+      "/SVF/Osc B/Semis": {
+        "source": "-",
+        "amount": 0
+      },
+      "/SVF/Mix/A": {
+        "source": "lfo1",
+        "amount": 0.22672981751686136
+      },
+      "/SVF/Folder/Index": {
+        "source": "shsq",
+        "amount": 0.06043043375500535
+      },
+      "/SVF/ResoDrive/Freq": {
+        "source": "shsq",
+        "amount": 0.1147050332666682
+      },
+      "/SVF/Osc A/Shape": {
+        "source": "sh",
+        "amount": 0.8600548743935271
+      },
+      "/SVF/Osc B/Detune": {
+        "source": "lfo1",
+        "amount": -0.024718832164828234
+      },
+      "/SVF/Mix/B": {
+        "source": "lfo1",
+        "amount": -0.039455164645585725
+      },
+      "/SVF/ResoDrive/Grit": {
+        "source": "square",
+        "amount": 0.06190864273116397
+      },
+      "/SVF/Osc B/Shape": {
+        "source": "sh",
+        "amount": -0.5114357327032648
+      },
+      "/SVF/ResoDrive/DryWet": {
+        "source": "shsq",
+        "amount": 0.4439975426969402
+      }
+    }
+  }
+}

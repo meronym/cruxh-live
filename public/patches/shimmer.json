@@ -1,0 +1,77 @@
+{
+  "name": "Shimmer",
+  "modulation": {
+    "code": "import(\"stdfaust.lib\");\n\nf = vslider(\"freq [scale:log] [unit:Hz]\", 1, 0.01, 10, 0.01);\nmix = vslider(\"ratio\", 1, 0, 1, 0.01);\n\nprocess = lfo1, square, sh, shsq, lfn with {\n\tlfo1 = os.osc(f/2);\n  square = os.lf_squarewave(2*f);\n\tsh = no.noise : ba.sAndH(os.lf_imptrain(f/4));\n  shsq = square, sh : si.interpolate(mix);\n\tlfn = no.lfnoise(f);\n};\n",
+    "params": {
+      "/FaustDSP/freq": 2.187761623949553,
+      "/FaustDSP/ratio": 0.58
+    },
+    "mods": {
+      "/FaustDSP/freq": {
+        "source": "shsq",
+        "amount": -0.7141589578577607
+      },
+      "/FaustDSP/ratio": {
+        "source": "lfo1",
+        "amount": 0.8484880084350911
+      }
+    },
+    "scopes": [
+      "lfo1",
+      "lfn",
+      "shsq"
+    ]
+  },
+  "synth": {
+    "code": "import(\"stdfaust.lib\");\n\nSR = ma.SR;\n\nphasor(freq) = ph(0, freq) with {\n    ph(phase, freq) = (+(phase-phase') : ma.frac) ~ +(freq/SR);\n};\n\nosc(f, index) = phasor(f) : sine : odd(f) with {\n    phasor(freq) = ph(0, freq) with {\n        ph(phase, freq) = (+(phase-phase') : ma.frac) ~ +(freq/ma.SR);\n    };\n\n    sine(phase) = cos(phase * 2 * ma.PI);\n\n    odd(freq, sig) = sig * index : ma.tanh;\n};\n\nshimmer_rev(decay, shim, shimFreq, drywet, sig) = sig : (forward ~ fbline) with {\n    forward(sig, fbsig) = mix(sig, fbsig) <: rev with {\n        mix(a, b) = shim * a + (1-shim) * b;\n        rev = _,_ <: re.dattorro_rev(pre_delay, bw, i_diff1, i_diff2, decay, d_diff1, d_diff2, damping),_,_ : dry_wet with {\n            pre_delay = 0;\n            bw = 0.9995;\n            i_diff1 = no.lfnoise(0.019) * 0.1 + 0.75;\n            i_diff2 = no.lfnoise(0.032) * 0.1 + 0.5;\n            d_diff1 = no.lfnoise(0.017) * 0.1 + 0.7;\n            d_diff2 = no.lfnoise(0.013) * 0.1 + 0.5;\n            damping = 0.0005;\n\n            dry_wet(x,y) = *(dry) + wet*x, *(dry) + wet*y \n            with {\n                wet = 0.5*(drywet+1.0);\n                dry = 1.0-wet;\n            };\n        };\n    };\n    fbline(l, r) = l + r : fi.dcblocker : ma.tanh : shiftup(shimFreq) : lpf : tremolo : _ with {\n        tremolo = *(0.7 + 0.3*no.lfnoise(0.23));\n        shiftup(f) = transpose(octave) with {\n            octave = 12 + 0.03 * no.lfnoise(0.17);\n            transpose(semis, sig) = de.fdelay(maxDelay, d, sig)*ratio + de.fdelay(maxDelay, d+window, sig)*(1-ratio) with {\n                maxDelay = 2^12;\n                window = min(SR/f, maxDelay);\n                xfade = window/4;\n                ratio = ma.fmin(d/xfade, 1);        \n                i = 1 - pow(2, semis/12);\n                d = i : (+ : +(window) : fmod(_, window)) ~ _;\n            };\n        };\n        lpf = fi.lowpass(4, SR/2.1);\n    };\n};\n\nfbdelay(len, fb, f, sem) = (forward ~ feedback) * gaincomp with {\n    forward(sig, fbSig) = si.interpolate(fb, fbSig, sig) : de.fdelay(SR/20, l);\n    l = len * (SR/(2*uiAFreq)) : si.smooth(ba.tau2pole(0.1));\n    feedback = transpose(sem) with {\n        // octave = sem * (1 + 0.007 * no.lfnoise(0.17));\n        transpose(sem, sig) = de.fdelay(maxDelay, d, sig)*ratio + de.fdelay(maxDelay, d+window, sig)*(1-ratio) with {\n            maxDelay = 2^12;\n            window = min(SR/f, maxDelay);\n            xfade = window/4;\n            ratio = ma.fmin(d/xfade, 1);        \n            i = 1 - sem;\n            d = i : (+ : +(window) : fmod(_, window)) ~ _;\n        };\n    };\n    gaincomp = 1; //si.interpolate(fbAmt^4, 1.0, 2.0);\n};\n\ndrive(amt) = _,_ : par(i, 2, *(amt) : ma.tanh);\n\n//// UI stuff below\n\nui(x) = hgroup(\"Delay Oscillator 2\", x);\n\nuiA(x) = ui(hgroup(\"[1]Osc A\", x));\nuiAFreq = uiA(vslider(\"[1]Freq[unit:Hz][scale:log]\", 58, 10, 6600, 0.01)) : qu.quantizeSmoothed(27.5, qu.penta) : si.smoo;\nuiAShape = uiA(vslider(\"[2]Shape\", 0.75, 0, 1, 0.01)) : si.smoo;\nuiABright = uiA(vslider(\"[3]Bright\", 0.33, 0, 1, 0.01)) : si.smoo;\nuiAIndex = uiA(vslider(\"[2]Index\", 0, 0, 1, 0.01)) : ^(2) : *(4) : +(1) : si.smoo;\n\nuiDl(x) = ui(hgroup(\"[2]Delay\", x));\nuiDelayLen = uiDl(vslider(\"[1]Len\", 0.86, 0, 1, 0.01)) : si.smoo;\nuiDelayFb = uiDl(vslider(\"[2]Fb\", 0.13, 0, 0.999, 0.01)) : sqrt : si.smoo;\n// uiDelaySat = uiDl(vslider(\"[5]Sat\", 0.1, 0, 1, 0.01)) : ^(2) : *(4) : +(1) : si.smoo;\nuiDelaySem = uiDl(vslider(\"[3]Semis\", 3, 1.5, 3, 0.5)) : si.smoo;\n\nuiRev(x) = ui(hgroup(\"[4]Reverb\", x));\nuiRevDecay = uiRev(vslider(\"[1]Decay\", 0.86, 0.0, 0.99, 0.001)) : sqrt : si.smoo;\nuiRevShim = uiRev(vslider(\"[2]Shimmer\", 0.8, 0, 0.99, 0.001)) : *(0.7) : *(1 + 0.07 * no.lfnoise(0.23)) : si.smoo;\nuiRevDryWet = uiRev(vslider(\"[3]Dry/Wet\", 0, -1.0, 1.0, 0.01)) : si.smoo;\n\nuiMix(x) = ui(hgroup(\"[5]Mix\", x));\nuiDrive = uiMix(vslider(\"[1]Drive[unit:dB]\", -6, -50, 40, 0.1)) : ba.db2linear : si.smoo;\n\n//// Main blocks\n\nfreqA = uiAFreq * (1 + 0.01 * no.lfnoise(0.13));\nphasorA = phasor(freqA);\noA = osc(freqA, uiAIndex);\n\nrev = shimmer_rev(uiRevDecay, uiRevShim, freqA, uiRevDryWet);\n\nprocess = oA : fbdelay(uiDelayLen * (1 + 0.01 * no.lfnoise(0.13)), uiDelayFb, freqA, uiDelaySem) <: rev : drive(uiDrive);",
+    "params": {
+      "/Delay Oscillator 2/Osc A/Freq": 65.71548860703659,
+      "/Delay Oscillator 2/Delay/Len": 0.62,
+      "/Delay Oscillator 2/Reverb/Decay": 0.792,
+      "/Delay Oscillator 2/Mix/Drive": 2.1999999999999957,
+      "/Delay Oscillator 2/Osc A/Index": 0.45,
+      "/Delay Oscillator 2/Delay/Fb": 0.24975,
+      "/Delay Oscillator 2/Reverb/Shimmer": 0.297,
+      "/Delay Oscillator 2/Delay/Semis": 2.01,
+      "/Delay Oscillator 2/Reverb/Dry/Wet": 0.15999999999999992
+    },
+    "mods": {
+      "/Delay Oscillator 2/Osc A/Freq": {
+        "source": "-",
+        "amount": 0.03518306179869627
+      },
+      "/Delay Oscillator 2/Delay/Len": {
+        "source": "lfo1",
+        "amount": -0.013004790780124368
+      },
+      "/Delay Oscillator 2/Reverb/Decay": {
+        "source": "lfn",
+        "amount": -0.21185792425627706
+      },
+      "/Delay Oscillator 2/Mix/Drive": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Delay Oscillator 2/Osc A/Index": {
+        "source": "lfo1",
+        "amount": 0.4418880851816648
+      },
+      "/Delay Oscillator 2/Delay/Fb": {
+        "source": "lfn",
+        "amount": 0.0604386656114894
+      },
+      "/Delay Oscillator 2/Reverb/Shimmer": {
+        "source": "lfo1",
+        "amount": -0.33619359480275696
+      },
+      "/Delay Oscillator 2/Delay/Semis": {
+        "source": "-",
+        "amount": 0.00005451643734141945
+      },
+      "/Delay Oscillator 2/Reverb/Dry/Wet": {
+        "source": "lfn",
+        "amount": 0.284906360618355
+      }
+    }
+  }
+}

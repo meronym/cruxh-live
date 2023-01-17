@@ -1,0 +1,102 @@
+{
+  "name": "Lotka Volterra BLIT Animate",
+  "modulation": {
+    "code": "import(\"stdfaust.lib\");\n\nf = vslider(\"freq [scale:log] [unit:Hz]\", 1, 0.01, 10, 0.01);\nmix = vslider(\"ratio\", 1, 0, 1, 0.01);\n\nprocess = lfo1, square, sh, shsq, lfn with {\n\tlfo1 = os.osc(f/2);\n  square = os.lf_squarewave(2*f);\n\tsh = no.noise : ba.sAndH(os.lf_imptrain(f/4));\n  shsq = square, sh : si.interpolate(mix);\n\tlfn = no.lfnoise(f);\n};\n",
+    "params": {
+      "/FaustDSP/freq": 2.187761623949553,
+      "/FaustDSP/ratio": 0.58
+    },
+    "mods": {
+      "/FaustDSP/freq": {
+        "source": "shsq",
+        "amount": -0.7141589578577607
+      },
+      "/FaustDSP/ratio": {
+        "source": "lfo1",
+        "amount": 0.8484880084350911
+      }
+    },
+    "scopes": [
+      "lfo1",
+      "lfn",
+      "shsq"
+    ]
+  },
+  "synth": {
+    "code": "import(\"stdfaust.lib\");\n\n\n\nfreq = hslider(\"F[scale:log]\", 96.7, 11, 2200, 0.001) : si.smoo : qu.quantize(27.5, qu.mixo);\nfreq2 = hslider(\"F2\", 1, 0.5, 16, 0.5) : si.smoo;\nfreq3 = hslider(\"FMod\", 10, 0.1, 100, 0.0001) : si.smoo;\nbright = hslider(\"Bright\", 0.96, 0, 1, 0.001) : si.smoo;\nnoix = hslider(\"Noise Index\", 0.1, 0, 1, 0.001) : si.smoo;\nfmamt = hslider(\"FMod Amt\", 0.1, 0, 1, 0.001) : si.smoo;\nuiFbMix = hslider(\"FbMix\", 0.04, 0, 1, 0.01) : ^(4) : *(50) : si.smoo;\n\n\n//////////////\n\nlotkavolterra(L, a, b, c, g, dt, x_0, y_0) =    prey_level(out * (x / L)) , \n                                                pred_level(out * (y / L))\n    letrec {\n        'x = fi.highpass(1, 0.05, tanh(L, (x_0 + x + dt * (a * x - b * x * y))));\n        'y = fi.highpass(1, 0.05, tanh(L, (y_0 + y + dt * (g * x * y - c * y))));\n    };\n\n// tanh() saturator with adjustable saturating threshold\ntanh(l, x) = l * ma.tanh(x / l);\n\n// smoothing function for click-free parameter variations using \n// a one-pole low-pass with a 20-Hz cut-off frequency.\nsmooth(x) = fi.pole(pole, x * (1.0 - pole))\n    with {\n        pole = exp(-2.0 * ma.PI * 20.0 / ma.SR);\n    };\n\n// GUI parameters\nprey_level(x) = attach(x , abs(x) : ba.linear2db : \n    levels_group(hbargraph(\"[0]Prey[style:dB]\", -60, 0)));\npred_level(x) = attach(x , abs(x) : ba.linear2db : \n    levels_group(hbargraph(\"[1]Predator[style:dB]\", -60, 0)));\nprey_group(x) = vgroup(\"[1]Prey\", x);\npred_group(x) = vgroup(\"[2]Predator\", x);\nglobal_group(x) = vgroup(\"[3]Global\", x);\nlevels_group(x) = hgroup(\"[4]Levels\", x);\na = prey_group(hslider(\"[0]Growth\", 3.98, 0, 10, .000001) \n    : smooth);\nb = prey_group(hslider(\"[1]Interaction\", 6.87, 0, 10, .000001) \n    : smooth);\nc = pred_group(hslider(\"[0]Extinction\", 4.31, 0, 10, .000001) \n    : smooth);                \ng = pred_group(hslider(\"[1]Interaction\", 2.54, 0, 10, .000001) \n    : smooth);\ndt = global_group(\n    hslider(\"[4]dt\", 0.24, .000001, 1, .000001) \n        : ^(3) : smooth);\n\nlimit = global_group(\n    hslider(\"[5]Limit[scale:log]\", 14.53, 0.01, 1024, .000001) : smooth);\nout = global_group(hslider(\"[6]Output\", 2.87, 0, 10, .000001) \n    : smooth);\n\nuiH = hslider(\"Harmonics\", 10, 1, 200, 1);\nuiF = hslider(\"Freq[scale:log][unit:Hz]\", 55, 0.1, 8000, 0.1) : qu.quantizeSmoothed(22.5, qu.penta);\nuiM = hslider(\"FreqB\", 2, 0.25, 4, 0.25) : si.smoo;\nuiDetune = hslider(\"Detune\", 0, -1, 1, 0.001) : normDetune : si.smoo with {\n    normDetune(x) = sign(x) * pow(x,2) / 10;\n    sign(x) = -1 * (x<0) + (x>=0);\n};\n\n/////////////////////\n\n// : panner(0.13), panner(0.17) : pmix :  _,_ with {\n//     // modulated stereo panner\n//     panner(freq, sig) = sig : sp.panner(0.5 + 0.2 * no.lfnoise(freq)) : _,_;\n//     // mixer\n//     pmix(l1, r1, l2, r2) = ma.tanh(l1 + l2), ma.tanh(r1 + r2);\n// };\n\n///////////////////////\n\ntwopi = 2 * ma.PI;\nif(cond, then, else) = select2(cond != 0, else, then);\ndiv(x1, x2) = x1 / if(x2 < 0, \n                      min(ma.EPSILON * -1, x2), \n                      max(ma.EPSILON, x2)\n);\ndirac = 1 - 1';\n\nasinc_bi(M, x) = if(\n    phase < ma.EPSILON, 1,\n    if(\n        abs(.5 - phase) < ma.EPSILON, -1,\n        sin(M1 * twopi * phase) / (M1 * sin(twopi * phase))\n    )\n) with {\n    M1 = rint(M) * 2;\n    phase = ma.frac(x);\n};\n\nblit_bi(h, f) = asinc_bi(h1, phase) with {\n    h1 = ba.sAndH(trigger, min(lim, h));\n    lim = rint(div(ma.SR, f) / 4);\n    trigger = (ma.signum(f) * (phase - phase') < 0) + dirac;\n    // Add au.dirac to \"trigger\" if you require the initial value\n    // of H[n] to be triggered initially at n = 0.\n    phase = os.phasor(1, f);\n};\n\nleaky(t, x) =  + (x) \n               ~ * (ba.tau2pole(t));\n\nsquare(h, f) = blits : div(leaky(.1 / twopi), scale) : \n      fi.highpass(1, 20)\n      with {\n           lim = rint(div(ma.SR, f) / 4);\n           scale = div(lim, (min(lim, h))) : si.smoo;\n\n           blits = blit_bi(h, f)\n                //  + blit_bi(h, f*ba.cent2ratio(no.lfnoise(0.49) * 0.43))\n                //  + blit_bi(h, f*ba.cent2ratio(-14))\n                //  + blit_bi(h, f*ba.cent2ratio(8))\n                //  + blit_bi(h, f*ba.cent2ratio(-21))\n                //  + blit_bi(h, f*ba.cent2ratio(12))\n                //  - hslider(\"dc1\", 0, -1, 0, 0.001) \n                : /(1);\n      };\n// gen = no.pink_noise * 0.1 : fi.lowpass(2, 2000);\n// gen = os.imptrain(freq + no.lfnoise(2 + no.lfnoise(4.1)))  : fi.lowpass(2, 4000) : *(0.1 * abs(1 + no.lfnoise(2.31)));\n// gen = os.imptrain(freq*exp(freq2 + fmamt*no.lfnoise(freq3))) : fi.lowpass(2, 1000) : *(bright);\n\n// gen = square(uiH, uiF) + square(uiH, uiF * (1 + uiDetune)) : /(2);\n\nshift(ratio) = ef.transpose(ma.SR/50, ma.SR/100, ba.ratio2semi(ratio));\nsummer(shifted, dry) = (shifted + dry), shifted;\nanim_up(s) = _ <: (shift(s), _) : summer : (shift(s^3), _) :> /(2);\nanim_down(s) = _ <: (shift(1/s), _) : summer : (shift(1/(s^3)), _) :> /(2);\nanimate(s, sig) = sig + anim_up(s, sig) + anim_down(s, sig): /(3);\n\ngen = square(uiH, uiF) : animate(uiS);\n\noscx = gen <: par(i, 8, fi.svf.bp(freq*ratio(i), 5000) * gain(i)) :> *(2) : ma.tanh <: _,_ with {\n    gain(i) = 1.5 / (i/1.8+1);\n    ratio(i) = i+1;\n};\n\nomix(ix, dry_l, dry_r, wet_l, wet_r) = si.interpolate(ix, dry_l, wet_l), si.interpolate(ix, dry_r, wet_r) : fi.dcblocker, fi.dcblocker : ma.tanh, ma.tanh;\n\nuiDryWet = hslider(\"DistAmt\", 1, 0, 1, 0.01) : si.smoo;\nuiResoMix = hslider(\"ResoAmt\", 1, 0, 1, 0.01) : si.smoo;\nuiS = hslider(\"Animate\", 0, 0, 1, 0.001) : ^(2) : /(100) : +(1) : si.smoo;\nuiLP = hslider(\"LP[scale:log][unit:Hz]\", 16000, 20, 22000, 0.1) : si.smoo;\nuiReflection = hslider(\"AP Refl\", 0, -1, 1, 0.01) : si.smoo;\n\nreso(f, f2) = _,_ : block(f), block(f*f2) : remx with {\n    block(fr) = _ <: par(i, 4, fi.svf.bp(fr*(i+1), 1000) * gain(i)) :> /(8) : ma.tanh;\n    gain(i) = 1 / (i+1);\n    remx(a, b) = a+b <: _,_;\n};\n\ncruncher(sig) = sig : ma.tanh : ^(7);\n\nprocess = gen <: lotkavolterra(limit, a, b, c, g, dt) : cruncher, cruncher : par(i, 2, fi.lowpass(1, uiLP)) <: _, _, reso(freq, freq2) : omix(uiResoMix); //: \n",
+    "params": {
+      "/FaustDSP/Animate": 0.57,
+      "/FaustDSP/F2": 13.674999999999999,
+      "/FaustDSP/F": 53.91401608334389,
+      "/FaustDSP/Freq": 0.19687265547438515,
+      "/FaustDSP/Harmonics": 110.45,
+      "/FaustDSP/LP": 22000,
+      "/FaustDSP/ResoAmt": 0.96,
+      "/FaustDSP/Prey/Growth": 6.7,
+      "/FaustDSP/Predator/Extinction": 3.4000000000000004,
+      "/FaustDSP/Prey/Interaction": 5.4,
+      "/FaustDSP/Predator/Interaction": 4.3,
+      "/FaustDSP/Global/dt": 0.1000009,
+      "/FaustDSP/Global/Limit": 256.48617553507756,
+      "/FaustDSP/Global/Output": 8.4
+    },
+    "mods": {
+      "/FaustDSP/Animate": {
+        "source": "lfo1",
+        "amount": 0.49764616779586657
+      },
+      "/FaustDSP/F2": {
+        "source": "square",
+        "amount": 0.4742281476376698
+      },
+      "/FaustDSP/F": {
+        "source": "sh",
+        "amount": 0.22988555103141806
+      },
+      "/FaustDSP/Freq": {
+        "source": "shsq",
+        "amount": -0.07743500778618759
+      },
+      "/FaustDSP/Harmonics": {
+        "source": "shsq",
+        "amount": -0.4763061613537281
+      },
+      "/FaustDSP/LP": {
+        "source": "lfn",
+        "amount": 0.45717080494549867
+      },
+      "/FaustDSP/ResoAmt": {
+        "source": "lfo1",
+        "amount": 0.41403735132682506
+      },
+      "/FaustDSP/Prey/Growth": {
+        "source": "square",
+        "amount": 0.3968992044537748
+      },
+      "/FaustDSP/Predator/Extinction": {
+        "source": "lfo1",
+        "amount": 0.7058184189098167
+      },
+      "/FaustDSP/Prey/Interaction": {
+        "source": "-",
+        "amount": 0
+      },
+      "/FaustDSP/Predator/Interaction": {
+        "source": "lfo1",
+        "amount": -0.7168876515833722
+      },
+      "/FaustDSP/Global/dt": {
+        "source": "shsq",
+        "amount": -0.1164049454318772
+      },
+      "/FaustDSP/Global/Limit": {
+        "source": "lfo1",
+        "amount": -0.04945673189131855
+      },
+      "/FaustDSP/Global/Output": {
+        "source": "-",
+        "amount": 0
+      }
+    }
+  }
+}

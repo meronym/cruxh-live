@@ -1,0 +1,92 @@
+{
+  "name": "Lotka Volterra Rework",
+  "modulation": {
+    "code": "import(\"stdfaust.lib\");\n\nf = vslider(\"freq [scale:log] [unit:Hz]\", 1, 0.1, 10, 0.01);\nmix = vslider(\"ratio\", 1, 0, 1, 0.01);\n\nprocess = lfo1, square, sh, shsq with {\n\tlfo1 = os.osc(f/2);\n  square = os.lf_squarewave(2*f);\n\tsh = no.noise : ba.sAndH(os.lf_imptrain(f/4));\n  shsq = square, sh : si.interpolate(mix);\n};\n",
+    "params": {
+      "/FaustDSP/freq": 0.15135612484362082,
+      "/FaustDSP/ratio": 0.74
+    },
+    "mods": {
+      "/FaustDSP/freq": {
+        "source": "shsq",
+        "amount": -0.7141589578577607
+      },
+      "/FaustDSP/ratio": {
+        "source": "lfo1",
+        "amount": 0.8484880084350911
+      }
+    },
+    "scopes": [
+      "lfo1",
+      "square",
+      "shsq"
+    ]
+  },
+  "synth": {
+    "code": "import(\"stdfaust.lib\");\n\nui(e) = hgroup(\"LVmod\", e);\nuiX(e) = ui(vgroup(\"X\", e));\nuiY(e) = ui(vgroup(\"Y\", e));\nuiDelGroup(e) = vgroup(\"[9]Delay\", e);\n\nuiXFreq = uiX(hslider(\"[0]Freq [scale:log] [unit:Hz]\", 42, 30, 1200, 0.01)) : qu.quantize(27.5, qu.penta) : si.smoo;\nuiXBirth = uiX(hslider(\"[1]Birth\", 0.1, 0, 1, .000001)) : ^(2) : *(10) : si.smoo;\nuiXFreedom = uiX(hslider(\"[3]Freedom [scale:log]\",  1, 0.1, 1024, .000001)) : si.smoo;\nuiXGrowth = uiX(hslider(\"[4]Growth\", 0.1, -1, 1, .000001)) : ^(3) : *(2) : si.smoo;\nuiXInter = uiX(hslider(\"[5]Interaction\", -0.46, -1.5, 1.5, .000001)) : ^(5) : si.smoo;\nuiXDecay = uiX(hslider(\"[6]Decay [scale:log] [unit:Hz]\", 10, 0.1, 55, 0.001)) : si.smoo;\n\nuiYFreq = uiY(hslider(\"[0]Freq [scale:log] [unit:Hz]\", 42, 30, 1200, 0.01)) : qu.quantize(27.5, qu.penta) : si.smoo;\nuiYBirth = uiY(hslider(\"[1]Birth\", 0.1, 0, 1, .000001)) : ^(2) : *(10) : si.smoo;\nuiYFreedom = uiY(hslider(\"[3]Freedom [scale:log]\",  1, 0.1, 1024, .000001)) : si.smoo;\nuiYGrowth = uiY(hslider(\"[4]Growth\", 0.1, -1, 1, .000001)) : ^(3) : *(2) : si.smoo;\nuiYInter = uiY(hslider(\"[5]Interaction\", -0.46, -1.5, 1.5, .000001)) : ^(5) : si.smoo;\nuiYDecay = uiY(hslider(\"[6]Decay [scale:log] [unit:Hz]\", 10, 0.1, 55, 0.001)) : si.smoo;\n\nosc(f) = no.noise : fi.nlf2(f, 0.99999) : _, ! : /(100);\n\nsat(lim, input) = input : /(lim) : ma.tanh : *(lim);\n\ndcblock(f, input) = input : fi.highpass(1, f);\n\nicompute(sig, aux, birth, inter, growth, lim, decay, fb) = smix : sat(lim) : dcblock(decay) with {\n    smix = sig * birth + aux * inter + fb * (1 + growth);\n};\n\ncompute(sig, aux, birth, inter, growth, lim, decay) = icompute(sig, aux, birth, inter, growth, lim, decay) ~ _;\n\nloop(x_in, y_in, xy_in) = (x*y), x/uiXFreedom, y/uiYFreedom with {\n    x = compute(x_in, xy_in, uiXBirth, uiXInter, uiXGrowth, uiXFreedom, uiXDecay);\n    y = compute(y_in, xy_in, uiYBirth, uiYInter, uiYGrowth, uiYFreedom, uiYDecay);\n};\n\nlv(x, y) = (loop(x, y) ~ _) : !,_,_;\n\noscs = osc(uiXFreq), osc(uiYFreq) : _,_;\n\nprocess = oscs : lv : ma.tanh, ma.tanh;",
+    "params": {
+      "/LVmod/X/Freq": 204.26429065942895,
+      "/LVmod/Y/Freq": 152.0644343885006,
+      "/LVmod/X/Birth": 0.47,
+      "/LVmod/Y/Birth": 0.45,
+      "/LVmod/X/Freedom": 36.863110004384815,
+      "/LVmod/Y/Freedom": 16.05702102930197,
+      "/LVmod/X/Growth": -0.14,
+      "/LVmod/Y/Growth": 0.32000000000000006,
+      "/LVmod/X/Interaction": -0.4500000000000002,
+      "/LVmod/Y/Interaction": -0.1499999999999999,
+      "/LVmod/X/Decay": 0.8022684020714304,
+      "/LVmod/Y/Decay": 5.000631675259474
+    },
+    "mods": {
+      "/LVmod/X/Freq": {
+        "source": "sh",
+        "amount": 0.12098712856071878
+      },
+      "/LVmod/Y/Freq": {
+        "source": "shsq",
+        "amount": 0.07557967322594847
+      },
+      "/LVmod/X/Birth": {
+        "source": "square",
+        "amount": -0.1302225495723957
+      },
+      "/LVmod/Y/Birth": {
+        "source": "lfo1",
+        "amount": 0.20237529761676298
+      },
+      "/LVmod/X/Freedom": {
+        "source": "-",
+        "amount": 0
+      },
+      "/LVmod/Y/Freedom": {
+        "source": "-",
+        "amount": 0
+      },
+      "/LVmod/X/Growth": {
+        "source": "lfo1",
+        "amount": 0.3249709595254499
+      },
+      "/LVmod/Y/Growth": {
+        "source": "-",
+        "amount": 0
+      },
+      "/LVmod/X/Interaction": {
+        "source": "shsq",
+        "amount": 0.004385967476346801
+      },
+      "/LVmod/Y/Interaction": {
+        "source": "lfo1",
+        "amount": -0.15399749692567044
+      },
+      "/LVmod/X/Decay": {
+        "source": "sh",
+        "amount": -0.20210582635215038
+      },
+      "/LVmod/Y/Decay": {
+        "source": "sh",
+        "amount": 0.620334070981173
+      }
+    }
+  }
+}
