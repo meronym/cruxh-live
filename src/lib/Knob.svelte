@@ -19,7 +19,7 @@
 
   <div class="label {position}">
     <p class="name">{desc.label}</p>
-    <p>{$mon}</p>  
+    <p class="value">{$mon}</p>  
   </div>
 
   <div class="slider">
@@ -73,12 +73,20 @@
   }
 
   .label p {
-    margin: 2px;
+    margin: 3px;
+  }
+
+  p.name {
+    color: #ddd;
+    font-size: 1.1em;
+  }
+  p.value {
+    color: #888;
   }
 
   .slider {
     grid-area: slider;
-    padding: 10px 0;
+    padding: 25px 0;
     display: flex;
     flex-direction: row;
     justify-content: center;

@@ -5,6 +5,7 @@
 
   export let eview;
   export let position;
+  export let hidden;
 
   let editMode = false;
 
@@ -14,7 +15,7 @@
 </script>
 
 
-<div class="wrapper">
+<div class="wrapper" class:hidden={hidden}>
   
   <div class="mode-switch {position}">
     <EngineToggleSwitch on:change={ changeEditMode } />

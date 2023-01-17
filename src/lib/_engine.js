@@ -145,7 +145,7 @@ class BaseEngine {
   
   modulate(mod_values) {
     // read params, map to required values, push values to DSP
-    for (let [address, pdesc] of Object.entries(this.descriptors)) {
+    for (let address of Object.keys(this.descriptors)) {
       let value = this.premod_norm[address];
       
       // compute modulation signal

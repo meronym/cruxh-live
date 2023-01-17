@@ -1,6 +1,7 @@
 <script>
   import { cruxh } from "./_cruxh.js";
   import { onDestroy } from "svelte";
+  import { audio } from "./_audio.js";
 
   export let eview;
   export let position;  // "top" or "bottom"
@@ -31,6 +32,7 @@
           newSynth.loadFrom(cruxh.synth.engine);
         }
         cruxh.synth.update(newSynth);
+        audio.setSynth(newSynth.dsp);
       } else {
         let newMod = await cruxh.buildModulation(editor.value);
         if (cruxh.modulation.engine) {
@@ -153,8 +155,8 @@
     margin: 0;
     padding: 10px;
     resize: none;
-    font-size: 14px;
-    line-height: 22px;
+    font-size: 15px;
+    line-height: 24px;
     tab-size: 2;
     background-color: #090909;
     color: #aaa;

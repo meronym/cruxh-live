@@ -8,14 +8,25 @@ import { audio } from './_audio.js';
 
 class CruxhApp {
   constructor() {
-    this.patchName = "...";
-    this.patchNameStore = writable(this.patchName);
-
     this.synth = new EngineView("synth");
     // this.synthEngine = null;
     
     this.modulation = new EngineView("modulation");
     // this.modEngine = null;
+
+    this.paused = true;
+
+    this.patchName = "Van der Pol Resonator";
+    this.patchNameStore = writable(this.patchName);
+    this.patchNameStore.subscribe((value) => {
+      this.patchName = value;
+    });
+    
+    this.modScopes = ['-', '-', '-'];
+    this.modScopesStore = writable(this.modScopes);
+    this.modScopesStore.subscribe((value) => {
+      this.modScopes = value;
+    });
   }
 
   async loadPatch(patch) {
@@ -33,7 +44,10 @@ class CruxhApp {
     // parsed/extracted by the compiler
     this.patchName = patch.name;
     this.patchNameStore.set(this.patchName);
-    
+
+    this.modScopes = patch.modulation.scopes || ['-', '-', '-'];
+    this.modScopesStore.set(this.modScopes);
+
     this.modulation.update(newMod);
     this.modulation.updateModSources(newMod.output_names);
     // this.modEngine = newMod;
@@ -41,21 +55,38 @@ class CruxhApp {
     this.synth.update(newSynth);
     this.synth.updateModSources(newMod.output_names);
     // this.synthEngine = newSynth;
+    audio.setSynth(newSynth.dsp);
   }
 
   savePatch() {
     // saves the current state of the engines into a json object
+    let modulation = this.modulation.exportPatchData();
+    modulation.scopes = this.modScopes; 
     return {
       "name": this.patchName,
-      "modulation": this.modulation.exportPatchData(),
+      "modulation": modulation,
       "synth": this.synth.exportPatchData()
     }
   }
 
-  // loop() {
-  //   this.modEngine.process();
-  //   this.synthEngine.modulate(this.modEngine.outputs);
-  // }
+  loop() {
+    // TODO: change this to an event driven loop
+    if (this.paused) return;
+    if (!this.modulation.engine) return;
+    if (!this.synth.engine) return;
+    this.modulation.engine.process();
+    this.synth.engine.modulate(this.modulation.engine.outputs);
+  }
+
+  async pause() {
+    this.paused = true;
+    await audio.pause();
+  }
+
+  async resume() {
+    this.paused = false;
+    await audio.resume();
+  }
 
   async buildModulation(code) {
     // compiles the code and returns the modulation details

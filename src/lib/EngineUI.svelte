@@ -106,8 +106,8 @@
     font-size: 16px;
     font-weight: 400;
     background-color: #000;
-    margin: 0 5px;
-    padding: 0 20px;
+    margin: 0 2px;
+    padding: 0 16px;
     transition: all 0.2s ease-out;
   }
 

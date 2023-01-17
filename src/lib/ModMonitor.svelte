@@ -1,12 +1,26 @@
 <script>
   import ModScope from './ModScope.svelte';
+  import { cruxh } from './_cruxh.js';
+  import { onDestroy } from 'svelte';
+
+  let modulators = [];
+
+  let unsub = cruxh.modScopesStore.subscribe((value) => {
+    modulators = value;
+  });
+  onDestroy(unsub);
+
+  function updateSource(index, source) {
+    modulators[index] = source;
+    // cruxh.modScopesStore.set(modulators);
+  }
 </script>
 
 <div class="monitor">
   <div class="mod-scopes">
-    <ModScope index=1/>
-    <ModScope index=2/>
-    <ModScope index=3/>
+    <ModScope source={modulators[0]} on:update={(ev) => updateSource(0, ev.detail) }/>
+    <ModScope source={modulators[1]} on:update={(ev) => updateSource(1, ev.detail) }/>
+    <ModScope source={modulators[2]} on:update={(ev) => updateSource(2, ev.detail) }/>
   </div>
   <div class="controls">
     <!-- <h2>Modulation</h2> -->

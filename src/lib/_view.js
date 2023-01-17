@@ -50,6 +50,7 @@ export class EngineView {
   updateModSources(modSources) {
     // to be executed after `update(engine)`
     // first, make sure the first element of modSources is always '-' (no modulation)
+    modSources = modSources.slice();
     if (modSources[0] !== '-') {
       modSources.unshift('-');
     }

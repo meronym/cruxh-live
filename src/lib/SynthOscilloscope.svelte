@@ -84,12 +84,17 @@
     ctx.beginPath();
     for (let i = _zero; i < _one; i++) {
         const x = w * (i - _zero) / (_one - _zero);
-        const y = ((d[i] + 10) / 100 + 1) * h;
-        if (i === _zero) ctx.moveTo(x, h - y);
-        else ctx.lineTo(x, h - y);
+        const y = Math.max(0, (d[i] + 40) / 100 + 1) * h/1.5;
+        if (i === _zero) ctx.moveTo(x, h - y/2);
+        else ctx.lineTo(x, h/2 - y/2);
     }
-    ctx.lineTo(w, h);
-    ctx.lineTo(0, h);
+    for (let i = _one; i > _zero; i--) {
+        const x = w * (i - _zero) / (_one - _zero);
+        const y = Math.max(0, (d[i] + 40) / 100 + 1) * h/1.5;
+        ctx.lineTo(x, h/2 + y/2);
+    }
+    // ctx.lineTo(0, h/2);
+    ctx.lineTo(0, h/2);
     ctx.closePath();
     ctx.fill();
   }
@@ -160,12 +165,12 @@
 <style>
   .oscilloscope {
     width: 100%;
-    height: 40%;
+    height: 45%;
     /* background: #444; */
   }
   .spectroscope {
     width: 100%;
-    height: 40%;
+    height: 45%;
     /* background: #421; */
   }
   canvas {

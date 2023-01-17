@@ -1,24 +1,19 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { cruxh } from "./_cruxh.js";
+  import { createEventDispatcher } from 'svelte';
 
-  export let index;
+  export let source;
+
   let frameId;
   let canvas;
   let ctx;
   let points = [];
 
-  let modulators;
-  let source = '-';
+  let modulators = ['-'];
+  let dispatch = createEventDispatcher();
 
   let unsub = cruxh.modulation.stores.modulators.subscribe((value) => {
-    if (value.find(x => x == source) === undefined) {
-      if (value.length > 0) {
-        source = value[index % value.length];
-      } else {
-        source = '-';
-      }
-    }
     modulators = value;
   });
   onDestroy(unsub);
@@ -36,17 +31,21 @@
     }
   })
 
+  function updateSource() {
+    dispatch('update', source);
+  }
+
   function draw(ctx) {
     let value = 0;
-    if (source !== "-" && cruxh.modulation.engine) {
+    if (source !== "-" && cruxh.modulation.engine && !cruxh.paused) {
       // sample new value and map it from (-1, 1) to (0, 1)
-      let value = (cruxh.modulation.engine.outputs[source] + 1.0) / 2.0;
-    }
-    // add sampled value to points array
-    points.push(value);
-    // remove oldest points if array is too long
-    while (points.length > canvas.width) {
-      points.shift();
+      value = (cruxh.modulation.engine.outputs[source] + 1.0) / 2.0;
+      // add sampled value to points array
+      points.push(value);
+      // remove oldest points if array is too long
+      while (points.length > canvas.width) {
+        points.shift();
+      }
     }
     // clear canvas
     // ctx.fillStyle = "#111";
@@ -68,7 +67,7 @@
 </script>
 
 <div class="wrapper">
-  <select bind:value={source}>
+  <select bind:value={source} on:change={updateSource}>
     {#each modulators as mod}
       <option value={ mod }>{ mod.replace('_', ' ').replace('-', '(no mod)') }</option>
     {/each}
@@ -90,7 +89,7 @@
     left: 0;
   }
   canvas {
-    height: 80px;
+    height: 100px;
     width: 100%;
   }
   select {  
