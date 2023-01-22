@@ -23,7 +23,7 @@
   </div>
 
   <div class="slider">
-    <input type="range" bind:value={$value} min="0" max="1" step="0.01"/> 
+    <input type="range" orient="vertical" bind:value={$value} min="0" max="1" step="0.01"/> 
     <ModPreview sig={mod_sig} active={mod_active} />
   </div>
 
