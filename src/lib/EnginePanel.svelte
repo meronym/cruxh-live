@@ -1,7 +1,7 @@
 <script>
-  import EngineEditor from "./EngineEditor.svelte";
-  import EngineToggleSwitch from "./EngineToggleSwitch.svelte";
-  import EngineUI from "./EngineUI.svelte";
+  import EngineEditorCM from './EngineEditorCM.svelte';
+  import EngineToggleSwitch from './EngineToggleSwitch.svelte';
+  import EngineUI from './EngineUI.svelte';
 
   export let eview;
   export let position;
@@ -14,22 +14,15 @@
   }
 </script>
 
-
-<div class="wrapper" class:hidden={hidden}>
-  
+<div class="wrapper" class:hidden>
   <div class="mode-switch {position}">
-    <EngineToggleSwitch on:change={ changeEditMode } />
+    <EngineToggleSwitch on:change={changeEditMode} />
   </div>
 
-  <EngineEditor eview={eview} position={position} hidden={!editMode} />
-  
-  <EngineUI 
-    stores={eview.stores}
-    position={position}
-    hidden={editMode} />
+  <EngineEditorCM {eview} hidden={!editMode} />
 
+  <EngineUI stores={eview.stores} {position} hidden={editMode} />
 </div>
-
 
 <style>
   .wrapper {

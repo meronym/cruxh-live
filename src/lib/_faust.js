@@ -249,7 +249,9 @@ export class UiParser {
     };
     for (var i = 0; i < ui.length; i++) {
       let group = ui[i];
-      if (group.type === 'tgroup') {
+      let capture =
+        group.label !== 'FaustDSP' && (group.type === 'vgroup' || group.type === 'hgroup');
+      if (capture) {
         tabs.active = group.label;
         if (!Object.hasOwn(tabs.omap, tabs.active)) {
           tabs.omap[tabs.active] = [];
@@ -259,7 +261,7 @@ export class UiParser {
       if (group.items) {
         UiParser.parse_items(group.items, obj, tabs, callback);
       }
-      if (group.type === 'tgroup') {
+      if (capture) {
         tabs.active = '/';
       }
     }
@@ -298,17 +300,21 @@ export class UiParser {
   }
 
   static collect_params(item, obj, tabs, callback) {
-    if (item.type === 'vgroup' || item.type === 'hgroup') {
+    if (item.type === 'tgroup') {
       UiParser.parse_items(item.items, obj, tabs, callback);
-    } else if (item.type === 'tgroup') {
-      let parent_tab = tabs.active;
-      tabs.active = item.label;
-      if (!Object.hasOwn(tabs.omap, tabs.active)) {
-        tabs.omap[tabs.active] = [];
-        tabs.list.push(item);
+    } else if (item.type === 'vgroup' || item.type === 'hgroup') {
+      if (tabs.active === '/' && item.label !== 'FaustDSP') {
+        let parent_tab = tabs.active;
+        tabs.active = item.label;
+        if (!Object.hasOwn(tabs.omap, tabs.active)) {
+          tabs.omap[tabs.active] = [];
+          tabs.list.push(item);
+        }
+        UiParser.parse_items(item.items, obj, tabs, callback);
+        tabs.active = parent_tab;
+      } else {
+        UiParser.parse_items(item.items, obj, tabs, callback);
       }
-      UiParser.parse_items(item.items, obj, tabs, callback);
-      tabs.active = parent_tab;
     } else if (
       item.type === 'vslider' ||
       item.type === 'hslider' ||
@@ -447,6 +453,8 @@ export async function buildFaustModulation(code, sample_rate = 100, name = 'mode
 export async function buildFaustAudio(audioContext, code) {
   let node = await compile(audioContext, code);
   let ui_parser = new UiParser(node.ui);
+  console.log(ui_parser.tabs);
+  console.log(node.ui);
   return {
     dsp: node,
     code: code,

@@ -1,6 +1,6 @@
 <script>
-  import Modulation from "./Modulation.svelte";
-  import Synth from "./Synth.svelte";
+  import EnginePanel from './EnginePanel.svelte';
+  import { cruxh } from './_cruxh.js';
 
   let active = 'audio';
 
@@ -9,30 +9,21 @@
   }
 </script>
 
-
 <div class="wrapper">
-  <Synth hidden={active == 'mod'} />
-  <Modulation hidden={active == 'audio'} />
-  
+  <EnginePanel eview={cruxh.synth} hidden={active == 'mod'} position="bottom" />
+  <EnginePanel eview={cruxh.modulation} hidden={active == 'audio'} position="bottom" />
+
   <div class="tabs">
-    <button
-      on:click={() => setActive('mod') }
-      class:active={active == 'mod'}>
-      CTRL
-    </button>
-    <button
-      on:click={() => setActive('audio') }
-      class:active={active == 'audio'}>
-      AUDIO
-    </button>
+    <button on:click={() => setActive('mod')} class:active={active == 'mod'}> CTRL </button>
+    <button on:click={() => setActive('audio')} class:active={active == 'audio'}> AUDIO </button>
   </div>
-  
 </div>
 
 <style>
   .wrapper {
     width: 100%;
     height: 100%;
+    /* overflow: hidden; */
     position: relative;
   }
 
@@ -72,7 +63,7 @@
   button.active {
     font-weight: 600;
     background-color: #090909;
-    border-color: #FFD56F;
-    color: #FFD56F;
+    border-color: #ffd56f;
+    color: #ffd56f;
   }
 </style>

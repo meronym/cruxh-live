@@ -1,0 +1,97 @@
+{
+  "name": "Engine Designer",
+  "modulation": {
+    "code": "import(\"stdfaust.lib\");\n\nui(x) = tgroup(\"Euclid Van der Pol\", x);\nuiseq(x) = ui(hgroup(\"[1]Clock\", x));\nuirung(x) = ui(hgroup(\"[2]Rungler\", x));\nuiother(x) = ui(hgroup(\"[3]Other\", x));\n\nN = uiseq(vslider(\"[0]Euclid N\", 15, 2, 21, 1));\nCLK = uiseq(vslider(\"[0]Clock [scale:log] [unit: bpm]\", 200, 10, 900, 0.1)) : /(60) : si.smoo;\nK1 = uiseq(vslider(\"[1]Euclid K1\", 2, 2, 21, 1)) : min(N);\nK2 = uiseq(vslider(\"[4]Euclid K2\", 7, 2, 21, 1)) : min(N);\n// K3 = uiseq(vslider(\"[7]K3\", 9, 2, 21, 1)) : min(N);\n\neuclid(n, k, clock) = clock : counter : _ with {\n    counter(imp) = (_counter ~ (_,_))(imp) : !,!,_ with {\n        _counter(_i, _e, imp) = i, e, trig with {\n            i = (_i + imp) % n;\n            e = ba.if(imp, descent, _e);\n            descent = (k * _i) % n >= (k * i) % n;\n            trig = imp * e;\n        };\n    };\n};\n\nmclk = os.lf_sawpos(CLK);\n\neclk = mclk : impulsify <: e1, e2 with {\n  impulsify(ramp) = ramp <: -(mem)<0;\n  e1(clk) = clk : euclid(N, K1);\n  e2(clk) = clk : cdiv(uiRatio) : euclid(N, K2); \n  // e3(clk) = clk : euclid(N, K3); \n};\n\n\n// rungler circuit (7-bit register, 3-bit dac)\nrungler73(shuf, data, clock) = data : shift : dac with {\n    // shift register\n    shift = head : tail with {\n        // first cells simply pass their output forward\n        head = latch(clock : @(6)) : latch(clock : @(5)) : latch(clock : @(4)) : latch(clock : @(3));\n        \n        // last 3 cells split their output (to be fed into a 3-bit DAC) \n        tail = latch(clock : @(2)) <: _, (latch(clock : @(1)) <: _, latch(clock));\n\n        // latch cell implementation\n        latch(trig, in) = (trig, in) : (cell ~ _) with {\n            cell(val, trig, in) = select2(trig, val, in) : _;\n        };\n    };\n    // only sample new shuf values on clock signal\n    sshuf = shuf : ba.sAndH(clock);\n    \n    dac(x, y, z) = 4*x + shuffle(2*y + z) : int with {\n        // shuffle input bits based on a seed\n        shuffle(v) = ((v + a) * b) % 4 with {\n            a = int(sshuf/2);\n            b = select2(sshuf%2, 1, 3);\n        };\n    };\n};\n\n\n// utility function\nclip(x) = select2(x>1, x, 1);\n\n// clock divider\ncdiv(ratio, in) = select2(ratio==1, div, in) with {\n    div = in : (inc(ratio) ~ _) <: -(mem)<0 with {\n        inc(r, current, in) = current + in/r : clip : ma.frac;\n    };\n};\n\n\n// polyrhythm setup\npr = 2 * (int(uiShape * 2.99) + 1) + 1;\nprs = 2 * pr * uiRatio;\n\n\n// main sampling clocks\n// clk = os.lf_imptrain(uiClockFreq * pow(1.3, no.lfnoise(0.07)) * pow(1.1, no.lfnoise(2.31))) <: _, cdiv(prs) : poly(2,pr), poly(2,pr) : _,_ with {\n//     // polyrhythm generator\n//     poly(r1, r2) = _ <: cdiv(r1), cdiv(r2) :> clip;\n// };\n\n\n// data line\ndata = os.lf_imptrain(df) <: _, cdiv(prs) : sq, sq : _,_ with {\n    sq(imp) = imp : (toggle ~ _) with {\n        toggle(state, imp) = ba.if(imp>0, 1-state, state);\n    };\n    // data line frequency\n    df = si.interpolate(cycle(uiShape), 1, 11) * 2 with {\n        // cycles from 0 to 1 two times when x goes 0..1\n        cycle(x) = 1 - 0.5 * (1 + cos(x * 4 * ma.PI));\n    };\n};\n\nrungler = eclk, data : router : rungler73(shuf), rungler73(shuf) : mask : norm, norm  with {\n    router(c1, c2, d1, d2) = d1, c1, d2, c2;\n\n    // dac shuffle covers integer range [0..7] when shape goes 0..1\n    shuf = int(uiShape * 7.99);\n\n    // \"flatten\" pwm duty cycle to make it spend more time closer to 0.5  \n    // duty = 0.5 * (1 + (2*density-1)^3);\n\n    // density mask (sample and hold via pwm wave)\n    mask = skip, _ with {\n        skip(x) = x : ba.sAndH(os.lf_pulsetrainpos(pwmff(norm(x)), uiDensity)) with {\n            // rungler output value sets the 'density' complex parameter\n            pwmff(xdens) = fbase * fm with {\n                // pwm base frequency rushes from f down to 0.1 when desity goes from 1 to 0\n                fbase = si.interpolate(xdens^5, 0.1, uiClockFreq);\n\n                // vary pwm frequency more aggressively in certain ranges\n                entropy = (0.5 * (1 + sin(xdens * 1.5 * ma.PI)))^3;\n                \n                // leads to 'bursts' of slowly varying length\n                fm = pow(1.3, entropy * no.lfnoise(0.1 + xdens));\n            };\n        };\n    };\n\n    norm(x) = x / 7;\n};\n\nuiClockFreq = CLK * 4; // hslider(\"[1]Clock\", 11.61, 0.1, 20, 0.01);\nuiShape = uirung(hslider(\"[2]Data\", 0.22, 0, 1, 0.01));\nuiDensity = uirung(hslider(\"[3]Density\", 0.7, 0, 1, 0.01));\nuiRatio = uirung(hslider(\"[4]Fugue Ratio\", 2, 1, 16, 1)) : int;\n\nlfnoise = no.lfnoise(f) with {\n  f = hslider(\"[1] LFN Freq [scale:log] [unit:Hz]\", 1, 0.001, 100, 0.001) : si.smoo;\n};\n\nprocess = (r1, r2, lfn) with {\n  r1 = rungler : _,!;\n  r2 = rungler : !,_;\n  lfn = uiother(lfnoise);\n};",
+    "params": {
+      "/Euclid Van der Pol/Clock/Clock": 203.8649107152844,
+      "/Euclid Van der Pol/Clock/Euclid N": 5.800000000000001,
+      "/Euclid Van der Pol/Clock/Euclid K1": 4.09,
+      "/Euclid Van der Pol/Other/LFN Freq": 0.15848931924611134,
+      "/Euclid Van der Pol/Rungler/Data": 0.5,
+      "/Euclid Van der Pol/Rungler/Density": 0.85,
+      "/Euclid Van der Pol/Clock/Euclid K2": 2.38,
+      "/Euclid Van der Pol/Rungler/Fugue Ratio": 2.3499999999999996
+    },
+    "mods": {
+      "/Euclid Van der Pol/Clock/Clock": {
+        "source": "-",
+        "amount": 0.01885292685897836
+      },
+      "/Euclid Van der Pol/Clock/Euclid N": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Clock/Euclid K1": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Other/LFN Freq": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Rungler/Data": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Rungler/Density": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Clock/Euclid K2": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Rungler/Fugue Ratio": {
+        "source": "-",
+        "amount": 0
+      }
+    },
+    "scopes": [
+      "-",
+      "-",
+      "-"
+    ]
+  },
+  "synth": {
+    "code": "import(\"stdfaust.lib\");\n\nui(x) = tgroup(\"Karplus Strong Drone\", x);\nuiEx(x) = ui(hgroup(\"[1]Exciter\", x));\nuiKS(x) = ui(hgroup(\"[2]Karplus Strong\", x));\n\nN = uiEx(vslider(\"[1]N\", 15, 2, 21, 1));\nCLK = uiEx(vslider(\"[0]Clock [scale:log] [unit: bpm]\", 200, 10, 900, 0.1)) : /(60) : si.smoo;\nK1 = uiEx(vslider(\"[2]K1\", 2, 1, 21, 1)) : min(N);\nK2 = uiEx(vslider(\"[3]K2\", 7, 1, 21, 1)) : min(N);\nK3 = uiEx(vslider(\"[4]K3\", 9, 1, 21, 1)) : min(N);\n\neuclid(n, k, clock) = clock : counter : _ with {\n    counter(imp) = imp : (_counter ~ (_,_)) : !,!,_ with {\n        _counter(_i, _e, imp) = i, e, trig with {\n            i = (_i + imp) % n;\n            e = ba.if(imp, ((i == 0) | descent), _e);\n            descent = (k * _i) % n >= (k * i) % n;\n            trig = imp * e;\n        };\n    };\n};\n\nmclk = os.lf_imptrain(CLK);\neclk = mclk : euclid(N, K1);\n\negen(level, trig) = trig : ba.peakholder(ba.sec2samp(att)) : en.arfe(att,rel,fl) with {\n    att = si.interpolate(level, 10/1000, 100/1000);\n    rel = si.interpolate(level, 40/1000, 2000/1000);\n    fl = ba.if(level < 0.5, 0, si.interpolate(ifl, 0, 1));\n    ifl = ((level - 0.5) * 2) ^ 2;\n};\n\nENV = uiEx(vslider(\"[5]Envelope\", 0.4, 0, 1, 0.01));\nenv = eclk : egen(ENV);\n\n\nexc(source) = source * env;\n\nks(freq, shape, exc) = exc : ((fwd ~ del) ~ analyze) : fi.dcblocker with {\n    analyze(sig) = sig : an.abs_envelope_tau(1);\n\n    // filter = fi.lowpass(1, lp) : fi.dcblockerat(0.1);\n    filter = fi.lowpass3e(lp) : fi.dcblockerat(0.1);\n  \n    fwd(fb, amp, exc) = fb + exc : *(pregain) : filter with {\n        pregain = ba.if(amp>0.4, adjup, 1);\n        adjup = 1 - (amp - 0.4);\n    };\n    \n    del = de.fdelay(maxdel, length) with {\n        maxdel = ma.SR / 20;\n        length = (ma.SR / freq);\n    };\n\n    lp = freq * pow(20000 / freq, shape);\n};\n\nquant = qu.quantize(55, qu.mixo);\n\nKsFreq = uiKS(vslider(\"[1]Freq [scale:log]\", 110, 20, 22000, 0.01)) : quant : si.smoo;\nKsLp = uiKS(vslider(\"[2]LP\", 0, 0, 1, 0.01)) : si.smoo;\nDetune = uiKS(vslider(\"[0]Detune\", 0, -1, 1, 0.01)) * 0.5;\n\nsource = os.imptrain(KsFreq * (1 + Detune));\n\nprocess = source : exc : ks(KsFreq, KsLp) <: _,_;\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+    "params": {
+      "/Karplus Strong Drone/Exciter/Clock": 103.80209167764318,
+      "/Karplus Strong Drone/Karplus Strong/Detune": 0.020000000000000018,
+      "/Karplus Strong Drone/Exciter/N": 10.55,
+      "/Karplus Strong Drone/Karplus Strong/Freq": 248.8464000157539,
+      "/Karplus Strong Drone/Exciter/K1": 4.6,
+      "/Karplus Strong Drone/Karplus Strong/LP": 0.86,
+      "/Karplus Strong Drone/Exciter/Envelope": 0
+    },
+    "mods": {
+      "/Karplus Strong Drone/Exciter/Clock": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Karplus Strong Drone/Karplus Strong/Detune": {
+        "source": "r2",
+        "amount": 0.9624002283780978
+      },
+      "/Karplus Strong Drone/Exciter/N": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Karplus Strong Drone/Karplus Strong/Freq": {
+        "source": "r2",
+        "amount": 0.0528744357083909
+      },
+      "/Karplus Strong Drone/Exciter/K1": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Karplus Strong Drone/Karplus Strong/LP": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Karplus Strong Drone/Exciter/Envelope": {
+        "source": "-",
+        "amount": 0
+      }
+    }
+  }
+}

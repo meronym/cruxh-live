@@ -1,80 +1,88 @@
 export const defaultPatch = {
-  "name": "Van der Pol Resonator (seq 1)",
-  "modulation": {
-    "code": "import(\"stdfaust.lib\");\n\nf = vslider(\"freq [scale:log] [unit:Hz]\", 1, 0.1, 10, 0.01);\nmix = vslider(\"ratio\", 1, 0, 1, 0.01);\n\nprocess = lfo1, square, sh, shsq with {\n\tlfo1 = os.osc(f/2);\n  square = os.lf_squarewave(2*f);\n\tsh = no.noise : ba.sAndH(os.lf_imptrain(f/4));\n  shsq = square, sh : si.interpolate(mix);\n};\n",
-    "params": {
-      "/FaustDSP/freq": 0.16595869074375608,
-      "/FaustDSP/ratio": 0.32
+  name: 'Van der Pol Resonator (seq 1)',
+  modulation: {
+    code: 'import("stdfaust.lib");\n\nf = vslider("freq [scale:log] [unit:Hz]", 1, 0.1, 10, 0.01);\nmix = vslider("ratio", 1, 0, 1, 0.01);\n\nprocess = lfo1, square, sh, shsq with {\n\tlfo1 = os.osc(f/2);\n  square = os.lf_squarewave(2*f);\n\tsh = no.noise : ba.sAndH(os.lf_imptrain(f/4));\n  shsq = square, sh : si.interpolate(mix);\n};\n',
+    params: {
+      '/FaustDSP/freq': 0.16595869074375608,
+      '/FaustDSP/ratio': 0.32,
     },
-    "mods": {
-      "/FaustDSP/freq": {
-        "source": "shsq",
-        "amount": -0.7141589578577607
+    mods: {
+      '/FaustDSP/freq': {
+        source: 'shsq',
+        amount: -0.7141589578577607,
       },
-      "/FaustDSP/ratio": {
-        "source": "lfo1",
-        "amount": 0.5422991944212278
-      }
+      '/FaustDSP/ratio': {
+        source: 'lfo1',
+        amount: 0.5422991944212278,
+      },
     },
-    "scopes": ["lfo1", "square", "shsq"]
+    scopes: ['lfo1', 'square', 'shsq'],
   },
-  "synth": {
-    "code": "import(\"stdfaust.lib\");\n\ngui(x) = hgroup(\"Forced Van der Pol\", x);\nuiSource(x) = gui(tgroup(\"[1]Forcing Source\", x));\n\nuiDensity = uiSource(vslider(\"[0]Density [scale:log]\", 0.7, 0.1, 16000, 0.01));\nuiFreq = uiSource(vslider(\"[1]Freq [unit:Hz] [scale:log]\", 55, 0.1, 16000, 0.01)) : qu.quantize(11, qu.mixo) : si.smoo;\nuiQ = uiSource(vslider(\"[2]Q\", 14, 1.1, 20, 0.01)) : ^(4) : si.smoo;\nuiStrike(x) = uiSource(hgroup(\"[4]Strike Model\", x));\nuiSPos = 0.2; // uiStrike(vslider(\"[1]Position\", 0.2, 0, 1, 0.01)) : si.smoo;\nuiSSharp = 0.2; // uiStrike(vslider(\"[2]Sharpness\", 0.2, 0, 1, 0.01)) : si.smoo;\nuiSGain = 0.2; // uiStrike(vslider(\"[3]Gain\", 0.2, 0, 1, 0.01)) : si.smoo;\n\nuiVanDerPol(x) = gui(tgroup(\"[2]VdP Oscillator\", x));\nuiVdPInputs(x) = uiVanDerPol(hgroup(\"[1]Inputs\", x));\nuiForce = uiVdPInputs(vslider(\"[0]Force\", 0.5, 0.001, 1, 0.01)) : ^(2) : *(100) : si.smoo;\nuiEps = uiVdPInputs(vslider(\"[1]Feedback\", 0.1, 0, 1, 0.00001)) : ^(2) : *(50) : si.smoo;\nuiDt = uiVanDerPol(vslider(\"[2]dt\", 1, 0.1, 20, 0.001)) : /(50) : si.smoo;\nuiLim = uiVanDerPol(vslider(\"[3]Limit\",  0.1, 0.0001, 1, .000001)) : ^(2) : *(100) : si.smoo;\nuiHP = uiVanDerPol(vslider(\"[4]DC Block [scale:log]\", 10, 0.5, 220, 0.001)) : si.smoo;\nuiDrive = uiVanDerPol(vslider(\"[6]Drive\", 3, 0.001, 11, 0.01)) : si.smoo;\nuiBalance = uiVanDerPol(vslider(\"[7]L/R Balance\", 0.42, 0, 1, 0.01)) : si.smoo;\n\n// Generator\nosc = no.sparse_noise(uiDensity) : pm.strike(uiSPos, uiSSharp, uiSGain) : fil(uiFreq, uiQ) with {\n    fil(freq, q) = fi.nlf2(freq, 1 - 1/q) : _,!;\n};\n\n// Forced Van der Pol oscillator\nfvdp(o) = o : (loop ~ (_,_))  : par(i, 2, out) with {\n    // signal conditioning block\n    // (saturation with variable limit) -> (dc blocker with variable frequency)\n    sblock(x) = x : /(uiLim) : ma.tanh : *(uiLim) : fi.highpass(1, uiHP);\n\n    loop(x, y, osc) = sblock(x1), sblock(y1) with {\n        x1 = x + uiDt * y;\n        y1 = y + uiDt * (uiEps * y * (1 - x^2) - x + uiForce * osc);\n    };\n\n    out = /(uiLim) : *(uiDrive) : ma.tanh;\n};\n\nomix(x, y) = l, r with {\n    l = x, y : si.interpolate(uiBalance);\n    r = x, y : si.interpolate(1-uiBalance);\n};\n\nprocess = osc : fvdp : omix : dm.zita_light;",
-    "params": {
-      "/FaustDSP/Zita Light/Dry/Wet Mix": 0,
-      "/FaustDSP/Zita Light/Level": -1.7999999999999972,
-      "/FaustDSP/Forced Van der Pol/Forcing Source/Density": 0.766832298935211,
-      "/FaustDSP/Forced Van der Pol/Forcing Source/Freq": 189.93088377253122,
-      "/FaustDSP/Forced Van der Pol/Forcing Source/Q": 14.140999999999998,
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Inputs/Force": 0.59041,
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Inputs/Feedback": 0.23,
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/dt": 1.294,
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Limit": 0.210079,
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/DC Block": 11.14630363252209,
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Drive": 4.950550000000001,
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/L/R Balance": 0.42
+  synth: {
+    code: 'import("stdfaust.lib");\n\ngui(x) = tgroup("Forced Van der Pol", x);\nuiSource(x) = gui(hgroup("[1]Forcing Source", x));\n\nuiDensity = uiSource(vslider("[0]Density [scale:log]", 0.7, 0.1, 16000, 0.01));\nuiFreq = uiSource(vslider("[1]Freq [unit:Hz] [scale:log]", 55, 0.1, 16000, 0.01)) : qu.quantize(11, qu.mixo) : si.smoo;\nuiQ = uiSource(vslider("[2]Q", 14, 1.1, 20, 0.01)) : ^(4) : si.smoo;\nuiStrike(x) = uiSource(hgroup("[4]Strike Model", x));\nuiSPos = 0.2; // uiStrike(vslider("[1]Position", 0.2, 0, 1, 0.01)) : si.smoo;\nuiSSharp = 0.2; // uiStrike(vslider("[2]Sharpness", 0.2, 0, 1, 0.01)) : si.smoo;\nuiSGain = 0.2; // uiStrike(vslider("[3]Gain", 0.2, 0, 1, 0.01)) : si.smoo;\n\nuiVanDerPol(x) = gui(hgroup("[2]VdP Oscillator", x));\nuiVdPInputs(x) = uiVanDerPol(hgroup("[1]Inputs", x));\nuiForce = uiVdPInputs(vslider("[0]Force", 0.5, 0.001, 1, 0.01)) : ^(2) : *(100) : si.smoo;\nuiEps = uiVdPInputs(vslider("[1]Feedback", 0.1, 0, 1, 0.00001)) : ^(2) : *(50) : si.smoo;\nuiDt = uiVanDerPol(vslider("[2]dt", 1, 0.1, 20, 0.001)) : /(50) : si.smoo;\nuiLim = uiVanDerPol(vslider("[3]Limit",  0.1, 0.0001, 1, .000001)) : ^(2) : *(100) : si.smoo;\nuiHP = uiVanDerPol(vslider("[4]DC Block [scale:log]", 10, 0.5, 220, 0.001)) : si.smoo;\nuiDrive = uiVanDerPol(vslider("[6]Drive", 3, 0.001, 11, 0.01)) : si.smoo;\nuiBalance = uiVanDerPol(vslider("[7]L/R Balance", 0.42, 0, 1, 0.01)) : si.smoo;\n\n// Generator\nosc = no.sparse_noise(uiDensity) : pm.strike(uiSPos, uiSSharp, uiSGain) : fil(uiFreq, uiQ) with {\n    fil(freq, q) = fi.nlf2(freq, 1 - 1/q) : _,!;\n};\n\n// Forced Van der Pol oscillator\nfvdp(o) = o : (loop ~ (_,_))  : par(i, 2, out) with {\n    // signal conditioning block\n    // (saturation with variable limit) -> (dc blocker with variable frequency)\n    sblock(x) = x : /(uiLim) : ma.tanh : *(uiLim) : fi.highpass(1, uiHP);\n\n    loop(x, y, osc) = sblock(x1), sblock(y1) with {\n        x1 = x + uiDt * y;\n        y1 = y + uiDt * (uiEps * y * (1 - x^2) - x + uiForce * osc);\n    };\n\n    out = /(uiLim) : *(uiDrive) : ma.tanh;\n};\n\nomix(x, y) = l, r with {\n    l = x, y : si.interpolate(uiBalance);\n    r = x, y : si.interpolate(1-uiBalance);\n};\n\nreverb = gui(dm.zita_light);\n\nprocess = osc : fvdp : omix : reverb;\n',
+    params: {
+      '/Forced Van der Pol/Forcing Source/Density': 0.7000000000000001,
+      '/Forced Van der Pol/VdP Oscillator/Inputs/Force': 0.5,
+      '/Forced Van der Pol/Zita Light/Dry/Wet Mix': 0,
+      '/Forced Van der Pol/Forcing Source/Freq': 55,
+      '/Forced Van der Pol/VdP Oscillator/Inputs/Feedback': 0.1,
+      '/Forced Van der Pol/Zita Light/Level': -6,
+      '/Forced Van der Pol/Forcing Source/Q': 13.999999999999998,
+      '/Forced Van der Pol/VdP Oscillator/dt': 0.9999999999999999,
+      '/Forced Van der Pol/VdP Oscillator/Limit': 0.1,
+      '/Forced Van der Pol/VdP Oscillator/DC Block': 10,
+      '/Forced Van der Pol/VdP Oscillator/Drive': 3,
+      '/Forced Van der Pol/VdP Oscillator/L/R Balance': 0.42,
     },
-    "mods": {
-      "/FaustDSP/Forced Van der Pol/Forcing Source/Density": {
-        "source": "square",
-        "amount": 0.0423895765816897
+    mods: {
+      '/Forced Van der Pol/Forcing Source/Density': {
+        source: '-',
+        amount: 0,
       },
-      "/FaustDSP/Forced Van der Pol/Forcing Source/Freq": {
-        "source": "shsq",
-        "amount": 0.13536988496903976
+      '/Forced Van der Pol/VdP Oscillator/Inputs/Force': {
+        source: '-',
+        amount: 0,
       },
-      "/FaustDSP/Forced Van der Pol/Forcing Source/Q": {
-        "source": "lfo1",
-        "amount": 0.046580275587476884
+      '/Forced Van der Pol/Zita Light/Dry/Wet Mix': {
+        source: '-',
+        amount: 0,
       },
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Inputs/Force": {
-        "source": "lfo1",
-        "amount": 0.13077031857569565
+      '/Forced Van der Pol/Forcing Source/Freq': {
+        source: '-',
+        amount: 0,
       },
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Inputs/Feedback": {
-        "source": "square",
-        "amount": -0.03784988480440871
+      '/Forced Van der Pol/VdP Oscillator/Inputs/Feedback': {
+        source: 'lfo1',
+        amount: 0.3153377147308296,
       },
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/dt": {
-        "source": "lfo1",
-        "amount": -0.0680334065842173
+      '/Forced Van der Pol/Zita Light/Level': {
+        source: '-',
+        amount: 0,
       },
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Limit": {
-        "source": "shsq",
-        "amount": -0.12293540136719766
+      '/Forced Van der Pol/Forcing Source/Q': {
+        source: '-',
+        amount: 0,
       },
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/DC Block": {
-        "source": "sh",
-        "amount": 0.5476702843361216
+      '/Forced Van der Pol/VdP Oscillator/dt': {
+        source: '-',
+        amount: 0,
       },
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/Drive": {
-        "source": "lfo1",
-        "amount": -0.19927422603393283
+      '/Forced Van der Pol/VdP Oscillator/Limit': {
+        source: '-',
+        amount: 0,
       },
-      "/FaustDSP/Forced Van der Pol/VdP Oscillator/L/R Balance": {
-        "source": "shsq",
-        "amount": -0.2088570448919534
-      }
-    }
-  }
+      '/Forced Van der Pol/VdP Oscillator/DC Block': {
+        source: '-',
+        amount: 0,
+      },
+      '/Forced Van der Pol/VdP Oscillator/Drive': {
+        source: '-',
+        amount: 0,
+      },
+      '/Forced Van der Pol/VdP Oscillator/L/R Balance': {
+        source: '-',
+        amount: 0,
+      },
+    },
+  },
 };

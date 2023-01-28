@@ -1,36 +1,39 @@
 <script>
-import ControlPanel from "./lib/ControlPanel.svelte";
-import ModMonitor from "./lib/ModMonitor.svelte";
-import SynthMonitor from "./lib/SynthMonitor.svelte";
-import PatchManager from "./lib/PatchManager.svelte";
-import Titlebar from "./lib/Titlebar.svelte";
-import Player from "./lib/Player.svelte";
+  import ControlPanel from './lib/ControlPanel.svelte';
+  import ModMonitor from './lib/ModMonitor.svelte';
+  import SynthMonitor from './lib/SynthMonitor.svelte';
+  import PatchManager from './lib/PatchManager.svelte';
+  import Titlebar from './lib/Titlebar.svelte';
+  import Player from './lib/Player.svelte';
 
-import { onMount } from 'svelte';
+  import { onMount } from 'svelte';
 
-import { cruxh } from "./lib/_cruxh.js";
-import { faustReady } from "./lib/_faust.js";
-import { defaultPatch } from './lib/_patch.js';
+  import { cruxh } from './lib/_cruxh.js';
+  import { faustReady } from './lib/_faust.js';
+  import { defaultPatch } from './lib/_patch.js';
+  import { audio } from './lib/_audio.js';
 
-onMount(async () => {
-  await faustReady;
-  cruxh.loadPatch(defaultPatch);
-  setInterval(() => {
-    cruxh.loop.bind(cruxh)();
-  }, 10);
-  setInterval(() => {
-    cruxh.modulation.poll_param_mods.bind(cruxh.modulation)();
-    cruxh.synth.poll_param_mods.bind(cruxh.synth)();
-  }, 50);
-});
-
+  onMount(async () => {
+    await faustReady;
+    await cruxh.loadPatch(defaultPatch);
+    // FIXME no idea why audio context doesn't suspend without the timeout
+    // await new Promise(resolve => setTimeout(resolve, 500));
+    // await audio.ctx.suspend();
+    setInterval(() => {
+      cruxh.loop.bind(cruxh)();
+    }, 10);
+    setInterval(() => {
+      cruxh.modulation.poll_param_mods.bind(cruxh.modulation)();
+      cruxh.synth.poll_param_mods.bind(cruxh.synth)();
+    }, 50);
+  });
 </script>
 
 <div class="app">
   <div class="leftbar">
     <PatchManager />
   </div>
-  
+
   <div class="cpanel">
     <ControlPanel />
   </div>
@@ -38,7 +41,7 @@ onMount(async () => {
   <div class="title">
     <Titlebar />
   </div>
-  
+
   <div class="player">
     <Player />
   </div>
@@ -51,21 +54,20 @@ onMount(async () => {
     <ModMonitor />
   </div>
 
-  <div class="rightbar">
-  </div>
+  <div class="rightbar" />
 </div>
 
 <style>
   .app {
     width: 100%;
-    height: 100vh;
+    height: 100%;
     display: grid;
     grid-template-columns: 1fr 3fr 1fr;
-    grid-template-rows: 1fr 2fr 5fr;
+    grid-template-rows: 1fr 1fr 5fr;
     grid-template-areas:
-      "leftbar title rightbar"
-      "leftbar player rightbar"
-      "mod-mon cpanel synth-mon";
+      'leftbar title rightbar'
+      'leftbar player rightbar'
+      'mod-mon cpanel synth-mon';
   }
 
   .leftbar {
@@ -95,9 +97,9 @@ onMount(async () => {
 
   .cpanel {
     grid-area: cpanel;
-    /* background-color: #000; */
+    overflow: hidden;
+    /* background-color: yellowgreen; */
   }
-
 
   .synth-mon {
     grid-area: synth-mon;
@@ -108,5 +110,4 @@ onMount(async () => {
     grid-area: mod-mon;
     /* background-color: dimgrey; */
   }
-
 </style>

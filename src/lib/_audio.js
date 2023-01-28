@@ -9,9 +9,10 @@ class Audio {
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 2048;
     this.volume = 0.5;
+    this.paused = true;
   }
 
-  setSynth(synth) {
+  async setSynth(synth) {
     if (this.synth) {
       // disconnect and destroy the old synth
       this.synth.disconnect();
@@ -21,6 +22,10 @@ class Audio {
     this.synth = synth;
     this.synth.connect(this.sink);
     this.synth.connect(this.analyser);
+    if (this.paused) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await this.ctx.suspend();
+    }
   }
 
   setVolume(value) {
@@ -30,16 +35,24 @@ class Audio {
   }
 
   async pause() {
+    if (this.paused) {
+      return;
+    }
+    this.paused = true;
     this.gainNode.gain.cancelScheduledValues(0);
     this.gainNode.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
     await new Promise(resolve => setTimeout(resolve, 150));
-    this.ctx.suspend();
+    await this.ctx.suspend();
   }
 
   async resume() {
+    if (!this.paused) {
+      return;
+    }
+    this.paused = false;
     this.gainNode.gain.cancelScheduledValues(0);
     this.gainNode.gain.value = 0;
-    this.ctx.resume();
+    await this.ctx.resume();
     this.gainNode.gain.linearRampToValueAtTime(this.volume, this.ctx.currentTime + 0.1);
   }
 }

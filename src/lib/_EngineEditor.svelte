@@ -1,23 +1,23 @@
 <script>
-  import { cruxh } from "./_cruxh.js";
-  import { onDestroy } from "svelte";
-  import { audio } from "./_audio.js";
+  import { cruxh } from './_cruxh.js';
+  import { onDestroy } from 'svelte';
+  import { audio } from './_audio.js';
 
   export let eview;
-  export let position;  // "top" or "bottom"
-  export let hidden;    // boolean
+  export let position; // "top" or "bottom"
+  export let hidden; // boolean
 
   let editor;
   let code = '';
   let error = null;
 
-  if (eview.name == "synth") {
-    let unsub = cruxh.synth.stores.code.subscribe((value) => {
+  if (eview.name == 'synth') {
+    let unsub = cruxh.synth.stores.code.subscribe(value => {
       code = value;
     });
     onDestroy(unsub);
   } else {
-    let unsub = cruxh.modulation.stores.code.subscribe((value) => {
+    let unsub = cruxh.modulation.stores.code.subscribe(value => {
       code = value;
     });
     onDestroy(unsub);
@@ -26,7 +26,7 @@
   async function onUpdate() {
     error = null;
     try {
-      if (eview.name == "synth") {
+      if (eview.name == 'synth') {
         let newSynth = await cruxh.buildSynth(editor.value);
         if (cruxh.synth.engine) {
           newSynth.loadFrom(cruxh.synth.engine);
@@ -55,45 +55,33 @@
       var end = editor.selectionEnd;
 
       // set textarea value to: text before caret + tab + text after caret
-      this.value = editor.value.substring(0, start) +
-        "\t" + editor.value.substring(end);
+      this.value = editor.value.substring(0, start) + '\t' + editor.value.substring(end);
 
       // put caret at right position again
-      editor.selectionStart =
-        editor.selectionEnd = start + 1;
+      editor.selectionStart = editor.selectionEnd = start + 1;
     }
   }
 
   function clearError() {
     error = null;
   }
-
 </script>
 
-
-
-<div class="wrapper {position}" class:hidden={hidden}>
-  
+<div class="wrapper {position}" class:hidden>
   <div class="content">
     {#if error}
       <div class="error" on:click={clearError} on:keypress={clearError}>
         <p>{error}</p>
       </div>
     {/if}
-    <textarea 
-    bind:this={editor} 
-    on:input={clearError}
-    on:keydown={keyDown}>{code}</textarea>
+    <textarea bind:this={editor} on:input={clearError} on:keydown={keyDown}>{code}</textarea>
   </div>
-  
+
   <div class="controls">
     <button on:click={onUpdate} class={position}>Update</button>
     <button class={position} disabled>Revert</button>
   </div>
-
 </div>
-
-
 
 <style>
   .wrapper {
@@ -105,15 +93,15 @@
   .top {
     grid-template-rows: 1fr 40px;
     grid-template-areas:
-      "content"
-      "controls";
+      'content'
+      'controls';
   }
 
   .bottom {
     grid-template-rows: 40px 1fr;
     grid-template-areas:
-      "controls"
-      "content";
+      'controls'
+      'content';
   }
 
   .content {
@@ -204,5 +192,4 @@
   button.bottom {
     border-bottom: none;
   }
-
 </style>
