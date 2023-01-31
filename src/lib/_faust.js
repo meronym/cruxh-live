@@ -402,6 +402,7 @@ export class CodeParser {
     this.code = code;
     this.input_names = [];
     this.output_names = [];
+    this.dsp_name = null;
     this.parse_code();
   }
 
@@ -417,6 +418,14 @@ export class CodeParser {
       if (outputs) {
         this.output_names = outputs.split(',').map(s => s.trim());
       }
+    }
+
+    rx = /declare\s+name\s+\"([\w\s]+)\"/m;
+    let name_match = rx.exec(this.code);
+    if (name_match) {
+      this.dsp_name = name_match[1];
+    } else {
+      this.dsp_name = null;
     }
   }
 }

@@ -27,8 +27,8 @@ var FaustModule = (function () {
         } else {
           throw 'using preloaded data can only be done on a web page or in a web worker';
         }
-        var PACKAGE_NAME = '../../lib/libfaust-wasm.data';
-        var REMOTE_PACKAGE_BASE = 'libfaust-wasm.data';
+        var PACKAGE_NAME = '../../lib/libfaust.txt';
+        var REMOTE_PACKAGE_BASE = 'libfaust.txt';
         if (typeof Module['locateFilePackage'] === 'function' && !Module['locateFile']) {
           Module['locateFile'] = Module['locateFilePackage'];
           err(
@@ -152,9 +152,9 @@ var FaustModule = (function () {
             for (var i2 = 0; i2 < files2.length; ++i2) {
               DataRequest.prototype.requests[files2[i2].filename].onload();
             }
-            Module['removeRunDependency']('datafile_../../lib/libfaust-wasm.data');
+            Module['removeRunDependency']('datafile_../../lib/libfaust.txt');
           }
-          Module['addRunDependency']('datafile_../../lib/libfaust-wasm.data');
+          Module['addRunDependency']('datafile_../../lib/libfaust.txt');
           if (!Module.preloadResults) Module.preloadResults = {};
           Module.preloadResults[PACKAGE_NAME] = { fromCache: false };
           if (fetched) {
@@ -1389,7 +1389,7 @@ var FaustModule = (function () {
         ? filename.startsWith(dataURIPrefix)
         : filename.indexOf(dataURIPrefix) === 0;
     }
-    var wasmBinaryFile = 'libfaust-wasm.wasm';
+    var wasmBinaryFile = 'libfaust.wasm';
     if (!isDataURI(wasmBinaryFile)) {
       wasmBinaryFile = locateFile(wasmBinaryFile);
     }

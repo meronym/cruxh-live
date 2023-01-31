@@ -1,0 +1,187 @@
+{
+  "name": "web-session-5c",
+  "modulation": {
+    "code": "import(\"stdfaust.lib\");\n\nf = vslider(\"freq [scale:log] [unit:Hz]\", 1, 0.1, 10, 0.01);\nmix = vslider(\"ratio\", 1, 0, 1, 0.01);\n\nprocess = lfo1, square, sh, shsq with {\n\tlfo1 = os.osc(f/2);\n  square = os.lf_squarewave(2*f);\n\tsh = no.noise : ba.sAndH(os.lf_imptrain(f/4));\n  shsq = square, sh : si.interpolate(mix);\n};\n",
+    "params": {
+      "/FaustDSP/freq": 0.380189396320561,
+      "/FaustDSP/ratio": 0.14
+    },
+    "mods": {
+      "/FaustDSP/freq": {
+        "source": "shsq",
+        "amount": -0.4569182408073235
+      },
+      "/FaustDSP/ratio": {
+        "source": "lfo1",
+        "amount": 0.5422991944212278
+      }
+    },
+    "scopes": [
+      "lfo1",
+      "sh",
+      "shsq"
+    ]
+  },
+  "synth": {
+    "code": "import(\"stdfaust.lib\");\n\nui(x) = tgroup(\"Euclid Van der Pol\", x);\nuiseq(x) = ui(hgroup(\"[1]Sequencer\", x));\n\nN = uiseq(vslider(\"[0]N\", 15, 2, 21, 1));\nCLK = uiseq(vslider(\"[0]Clock [scale:log] [unit: bpm]\", 200, 10, 900, 0.1)) : /(60) : si.smoo;\nK1 = uiseq(vslider(\"[1]K1\", 2, 2, 21, 1)) : min(N);\nK2 = uiseq(vslider(\"[4]K2\", 7, 2, 21, 1)) : min(N);\nK3 = uiseq(vslider(\"[7]K3\", 9, 2, 21, 1)) : min(N);\n\nclock = os.lf_imptrain(CLK);\n\n/* \nideal syntax below (maybe write a pre-processor)\n\ncounter(imp) = trig with {\n    i = (i' + imp) % n;\n    e = ba.if(imp, descent, e');\n    descent = (k * i') % n >= (k * i) % n;\n    trig = imp * e;\n}\n*/\n\neuclid(n, k, clock) = clock : counter : _ with {\n    counter(imp) = (_counter ~ (_,_))(imp) : !,!,_ with {\n        _counter(_i, _e, imp) = i, e, trig with {\n            i = (_i + imp) % n;\n            e = ba.if(imp, descent, _e);\n            descent = (k * _i) % n >= (k * i) % n;\n            trig = imp * e;\n        };\n    };\n};\n\nuio1(x) = ui(hgroup(\"[2]Osc 1\", x));\nuio2(x) = ui(hgroup(\"[3]Osc 2\", x));\nuio3(x) = ui(hgroup(\"[4]Osc 3\", x));\n\nquant = qu.quantize(55, qu.mixo);\n\n// Forced Van der Pol oscillator\nfvdp(trig) = trig : resonator : (loop ~ (_,_))  : par(i, 2, out) with {\n    // driving source\n    resonator(trig) = trig : pm.strike(0.2, 0.2, 0.5) : fi.nlf2(uiFreq, 1 - 1/uiQ) : _,!;\n\n    // signal conditioning block\n    // (saturation with variable limit) -> (dc blocker with variable frequency)\n    sblock(x) = x : /(uiLim) : ma.tanh : *(uiLim) : fi.highpass(1, uiHP);\n\n    loop(x, y, osc) = sblock(x1), sblock(y1) with {\n        x1 = x + uiDt * y;\n        y1 = y + uiDt * (uiEps * y * (1 - x^2) - x + uiForce * osc);\n    };\n\n    out = /(uiLim) : *(uiDrive) : ma.tanh;\n\n    uiFreq = vslider(\"[1]Freq [unit:Hz] [scale:log]\", 55, 0.1, 16000, 0.01) : quant : si.smoo;\n    uiQ = vslider(\"[2]Q\", 14, 1.1, 20, 0.01) : ^(4) : si.smoo;\n\n    uiForce = vslider(\"[3]Force\", 0.5, 0.001, 1, 0.01) : ^(2) : *(100) : si.smoo;\n    uiEps = vslider(\"[4]Feedback\", 0.1, 0, 1, 0.00001) : ^(2) : *(50) : si.smoo;\n    uiDt = vslider(\"[5]dt\", 1, 0.1, 20, 0.001) : /(50) : si.smoo;\n    uiLim = vslider(\"[6]Limit\",  0.1, 0.0001, 1, .000001) : ^(2) : *(100) : si.smoo;\n    uiHP = vslider(\"[7]DC Block [scale:log]\", 10, 0.5, 220, 0.001) : si.smoo;\n    uiDrive = vslider(\"[8]Drive\", 0.3, 0, 1, 0.001) : ^(4) : *(11) : si.smoo;\n};\n\neseq(clock) = clock <: euclid(N, K1), euclid(N, K2), euclid(N, K3);\n\nprocess = clock : eseq : uio1(fvdp), uio2(fvdp), uio3(fvdp) :> /(3) <: ui(dm.zita_light) : _,_;\n",
+    "params": {
+      "/Euclid Van der Pol/Sequencer/Clock": 148.78032589238495,
+      "/Euclid Van der Pol/Sequencer/N": 16.25,
+      "/Euclid Van der Pol/Zita Light/Dry/Wet Mix": 0.1399999999999999,
+      "/Euclid Van der Pol/Sequencer/K1": 7.89,
+      "/Euclid Van der Pol/Osc 1/Freq": 82.0932010311668,
+      "/Euclid Van der Pol/Osc 2/Freq": 168.4823413885889,
+      "/Euclid Van der Pol/Osc 3/Freq": 439.4242173224475,
+      "/Euclid Van der Pol/Zita Light/Level": 1.5,
+      "/Euclid Van der Pol/Osc 1/Q": 6.013999999999999,
+      "/Euclid Van der Pol/Osc 2/Q": 9.982999999999999,
+      "/Euclid Van der Pol/Osc 3/Q": 10.171999999999999,
+      "/Euclid Van der Pol/Osc 1/Force": 0.65035,
+      "/Euclid Van der Pol/Osc 2/Force": 0.71029,
+      "/Euclid Van der Pol/Osc 3/Force": 0.61039,
+      "/Euclid Van der Pol/Sequencer/K2": 2.95,
+      "/Euclid Van der Pol/Osc 1/Feedback": 0.22,
+      "/Euclid Van der Pol/Osc 2/Feedback": 0.25,
+      "/Euclid Van der Pol/Osc 3/Feedback": 0.07,
+      "/Euclid Van der Pol/Osc 1/dt": 1.095,
+      "/Euclid Van der Pol/Osc 2/dt": 2.09,
+      "/Euclid Van der Pol/Osc 3/dt": 1.095,
+      "/Euclid Van der Pol/Osc 1/Limit": 0.20008,
+      "/Euclid Van der Pol/Osc 2/Limit": 0.360064,
+      "/Euclid Van der Pol/Osc 3/Limit": 0.450055,
+      "/Euclid Van der Pol/Sequencer/K3": 5.04,
+      "/Euclid Van der Pol/Osc 1/DC Block": 2.1547587188981385,
+      "/Euclid Van der Pol/Osc 2/DC Block": 20.48689478333021,
+      "/Euclid Van der Pol/Osc 3/DC Block": 40.01805081979545,
+      "/Euclid Van der Pol/Osc 1/Drive": 0.89,
+      "/Euclid Van der Pol/Osc 2/Drive": 0.54,
+      "/Euclid Van der Pol/Osc 3/Drive": 0.63
+    },
+    "mods": {
+      "/Euclid Van der Pol/Sequencer/Clock": {
+        "source": "-",
+        "amount": -0.04438658431769769
+      },
+      "/Euclid Van der Pol/Sequencer/N": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Zita Light/Dry/Wet Mix": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Sequencer/K1": {
+        "source": "sh",
+        "amount": -0.17252829777076412
+      },
+      "/Euclid Van der Pol/Osc 1/Freq": {
+        "source": "-",
+        "amount": 0.0363569856096658
+      },
+      "/Euclid Van der Pol/Osc 2/Freq": {
+        "source": "sh",
+        "amount": -0.3317945679527993
+      },
+      "/Euclid Van der Pol/Osc 3/Freq": {
+        "source": "sh",
+        "amount": 0.013982147226778489
+      },
+      "/Euclid Van der Pol/Zita Light/Level": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Osc 1/Q": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Osc 2/Q": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Osc 3/Q": {
+        "source": "-",
+        "amount": 0.19292729850860652
+      },
+      "/Euclid Van der Pol/Osc 1/Force": {
+        "source": "-",
+        "amount": -0.16931579617455636
+      },
+      "/Euclid Van der Pol/Osc 2/Force": {
+        "source": "-",
+        "amount": 0.08978754254353977
+      },
+      "/Euclid Van der Pol/Osc 3/Force": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Sequencer/K2": {
+        "source": "-",
+        "amount": 0.2734496556236085
+      },
+      "/Euclid Van der Pol/Osc 1/Feedback": {
+        "source": "-",
+        "amount": 0.113121575098912
+      },
+      "/Euclid Van der Pol/Osc 2/Feedback": {
+        "source": "-",
+        "amount": 0.13263170506604227
+      },
+      "/Euclid Van der Pol/Osc 3/Feedback": {
+        "source": "-",
+        "amount": -0.03545426218526421
+      },
+      "/Euclid Van der Pol/Osc 1/dt": {
+        "source": "-",
+        "amount": -0.023700271498404434
+      },
+      "/Euclid Van der Pol/Osc 2/dt": {
+        "source": "-",
+        "amount": -0.1309553008703398
+      },
+      "/Euclid Van der Pol/Osc 3/dt": {
+        "source": "-",
+        "amount": -0.006901315459747397
+      },
+      "/Euclid Van der Pol/Osc 1/Limit": {
+        "source": "-",
+        "amount": -0.0012541560727650958
+      },
+      "/Euclid Van der Pol/Osc 2/Limit": {
+        "source": "-",
+        "amount": 0.0715026564365836
+      },
+      "/Euclid Van der Pol/Osc 3/Limit": {
+        "source": "-",
+        "amount": -0.01914152253981232
+      },
+      "/Euclid Van der Pol/Sequencer/K3": {
+        "source": "sh",
+        "amount": 0.06509478102929471
+      },
+      "/Euclid Van der Pol/Osc 1/DC Block": {
+        "source": "-",
+        "amount": -0.19430885819875052
+      },
+      "/Euclid Van der Pol/Osc 2/DC Block": {
+        "source": "lfo1",
+        "amount": 0.14231056769969935
+      },
+      "/Euclid Van der Pol/Osc 3/DC Block": {
+        "source": "-",
+        "amount": -0.16865739613456732
+      },
+      "/Euclid Van der Pol/Osc 1/Drive": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Osc 2/Drive": {
+        "source": "-",
+        "amount": 0
+      },
+      "/Euclid Van der Pol/Osc 3/Drive": {
+        "source": "-",
+        "amount": 0
+      }
+    }
+  }
+}

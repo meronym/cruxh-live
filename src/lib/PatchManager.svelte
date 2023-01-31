@@ -1,12 +1,51 @@
 <script>
+  import { supabase } from '../db/supa.js';
   import { cruxh } from './_cruxh.js';
+  import { CodeParser } from './_faust.js';
+
+  async function sha256(source) {
+    const sourceBytes = new TextEncoder().encode(source);
+    const digest = await crypto.subtle.digest('SHA-256', sourceBytes);
+    const resultBytes = [...new Uint8Array(digest)];
+    return resultBytes.map(x => x.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function savePatch2() {
+    let slug = slugify(cruxh.patchName) + '-' + Date.now().toString(36);
+
+    let patch = cruxh.savePatch();
+
+    let parser = new CodeParser(patch.synth.code);
+    parser.parse_code();
+    let synthName = parser.dsp_name;
+    console.log(synthName);
+
+    // parse the faust code and attempt to extract the name of the dsp
+
+    // let mHash = await sha256(patch.modulation.code);
+    // // create a mod_engine resource if it doesn't exist
+    // const { data, error } = await supabase
+    //   .from('mengines')
+    //   .upsert({ hash: mHash, slug: 'Albania' })
+    //   .select()
+
+    // let sHash = await sha256(patch.synth.code);
+    // // create a synth_engine resource if it doesn't exist
+
+    // let data = JSON.stringify(cruxh.savePatch(), null, 2);
+
+    // let { error } = await supabase.from('patches').insert([{ id: slug, data }]);
+    // if (error) {
+    //   console.log('supabase error', error);
+    // }
+  }
 
   function savePatch() {
     let data = JSON.stringify(cruxh.savePatch(), null, 2);
-    
+
     const a = document.createElement('a');
-    const file = new Blob([data], {type: 'application/json'});
-    
+    const file = new Blob([data], { type: 'application/json' });
+
     a.href = URL.createObjectURL(file);
     let slug = slugify(cruxh.patchName);
     a.download = `${slug}.json`;
@@ -16,7 +55,7 @@
   }
 
   async function loadPatch(evt) {
-    const [file] = evt.target.files
+    const [file] = evt.target.files;
     if (!file) return;
     evt.target.value = null;
     let data = await file.text();
@@ -27,31 +66,30 @@
   function slugify(str) {
     str = str.replace(/^\s+|\s+$/g, ''); // trim
     str = str.toLowerCase();
-  
+
     // remove accents, swap ñ for n, etc
-    var from = "àáäâèéëêìíïîòóöôùúüûñç·/_,:;";
-    var to   = "aaaaeeeeiiiioooouuuunc------";
-    for (var i=0, l=from.length ; i<l ; i++) {
-        str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
+    var from = 'àáäâèéëêìíïîòóöôùúüûñç·/_,:;';
+    var to = 'aaaaeeeeiiiioooouuuunc------';
+    for (var i = 0, l = from.length; i < l; i++) {
+      str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
     }
 
-    str = str.replace(/[^a-z0-9 -]/g, '') // remove invalid chars
-        .replace(/\s+/g, '-') // collapse whitespace and replace by -
-        .replace(/-+/g, '-'); // collapse dashes
+    str = str
+      .replace(/[^a-z0-9 -]/g, '') // remove invalid chars
+      .replace(/\s+/g, '-') // collapse whitespace and replace by -
+      .replace(/-+/g, '-'); // collapse dashes
 
     return str;
   }
-
 </script>
 
 <div>
   <button on:click={savePatch}>Save Patch</button>
-  
+
   <label class="file-upload">
-    <input type="file" on:input={ loadPatch } />  
+    <input type="file" on:input={loadPatch} />
     <span>Load Patch</span>
   </label>
-  
 </div>
 
 <style>
@@ -64,7 +102,7 @@
     align-items: center;
   }
 
-  input[type="file"] {
+  input[type='file'] {
     display: none;
   }
 
@@ -113,5 +151,4 @@
     /* background-color: #FFD56F; */
     background-color: #111;
   }
-
 </style>

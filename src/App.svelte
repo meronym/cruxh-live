@@ -15,6 +15,8 @@
 
   onMount(async () => {
     await faustReady;
+    // await audio.link(cruxh);
+    // console.log('Linked', audio.proc);
     await cruxh.loadPatch(defaultPatch);
     // FIXME no idea why audio context doesn't suspend without the timeout
     // await new Promise(resolve => setTimeout(resolve, 500));
@@ -25,7 +27,7 @@
     setInterval(() => {
       cruxh.modulation.poll_param_mods.bind(cruxh.modulation)();
       cruxh.synth.poll_param_mods.bind(cruxh.synth)();
-    }, 50);
+    }, 100);
   });
 </script>
 

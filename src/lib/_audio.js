@@ -1,3 +1,6 @@
+import workletUrl from './_proc.js?url';
+import { buildFaustAudio } from './_faust.js';
+
 class Audio {
   constructor() {
     this.ctx = new window.AudioContext();
@@ -11,6 +14,34 @@ class Audio {
     this.volume = 0.5;
     this.paused = true;
   }
+
+  /*
+  async link(app) {
+    await this.ctx.audioWorklet.addModule(workletUrl);
+    this.proc = new AudioWorkletNode(this.ctx, 'cruxh-processor');
+
+    let oscCode = `
+      import("stdfaust.lib");
+      gain = hslider("gain", 0.1, 0, 1, 0.01) : si.smoo;
+      freq = hslider("freq", 220, 20, 20000, 1) : si.smoo;
+      process = os.osc(freq) * gain <: _,_;
+    `;
+    this.osc = await buildFaustAudio(this.ctx, oscCode);
+    this.osc.dsp.connect(this.sink);
+
+    // for (let key of this.osc.dsp.parameters.keys()) {
+    //   console.log(key);
+    // }
+
+    // this.proc.port.postMessage(this.osc.dsp);
+    // console.log(this.proc);
+
+    // this.proc.connect(this.osc.dsp.parameters.get('/FaustDSP/gain'));
+    // let gain = this.osc.dsp.parameters.get('/FaustDSP/gain');
+    // gain.value = 0.0;
+    // this.proc.connect(gain);
+  }
+  */
 
   async setSynth(synth) {
     if (this.synth) {

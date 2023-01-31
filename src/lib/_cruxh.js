@@ -13,7 +13,7 @@ class CruxhApp {
 
     this.paused = true;
 
-    this.patchName = 'Van der Pol Resonator';
+    this.patchName = '';
     this.patchNameStore = writable(this.patchName);
     this.patchNameStore.subscribe(value => {
       this.patchName = value;
